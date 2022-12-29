@@ -290,7 +290,7 @@ Unattended-Upgrade::Origins-Pattern {
 
 ## Unstaking
 
-To stop staking:
+To stop staking, which is different to withdrawal:
 
 * `lighthouse account validator exit`
 
@@ -318,11 +318,15 @@ To stop staking:
     * There's little point in the thief extracting the validator key from the machine, because it can't be used without the password anyway.
     * See also this [discussion](https://www.reddit.com/r/ethstaker/comments/p9ylco/what_to_do_if_your_staking_machine_is_physically/)
 
+### You move house
+
+* See "Unstaking" above.
+
 ## Sedge
 
 If this seems like a ton of work, you can forget most of the above and just install and run `sedge`: https://docs.sedge.nethermind.io/docs/quickstart/install-guide
 
-    1. Expect `segde` to use about 1TB per month in bandwidth. It'll be more while sync'ing, then decrease.
-    1. To start the `sedge` containers once installed: `sudo docker compose -f docker-compose-scripts/docker-compose.yml up -d execution consensus`
-    1. To stop them: `sudo docker compose -f docker-compose-scripts/docker-compose.yml down`
-    1. Running as root was necessary on my host, but can be avoided (Google it).
+1. Expect `segde` to use about 1TB per month in bandwidth. It'll be more while sync'ing, then decrease.
+1. To start the `sedge` containers once installed: `sudo docker compose -f docker-compose-scripts/docker-compose.yml up -d execution consensus`
+1. To stop them: `sudo docker compose -f docker-compose-scripts/docker-compose.yml down`
+1. Running as root was necessary on my host, but can be avoided (Google it).
