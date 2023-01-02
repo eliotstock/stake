@@ -291,7 +291,7 @@ Unattended-Upgrade::Origins-Pattern {
     1. https://github.com/flashbots/mev-boost/releases
 1. If using a PPA, update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT.
 1. To check which version you're currently running:
-    1. `nethermind --version` 1.14.7
+    1. `nethermind --version` 1.15.0
     1. `lighthouse --version` 3.3.0
     1. `/data/mev-boost --version` 1.4.0
 1. On each new release:
