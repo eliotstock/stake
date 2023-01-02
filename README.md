@@ -275,6 +275,11 @@ Unattended-Upgrade::Origins-Pattern {
 1. Check disks have space: `df -h`
 1. Check CPU load average: `htop`. Should be 0.70 max, times the number of cores. So on an 8-core machine, a load average of 5.6 is the threshold at which the machine is getting overloaded.
 1. Check RAM available: `htop`, see `Mem`.
+1. Check internet connectivity and speed:
+    1. `sudo apt  install speedtest-cli`
+    1. `speedtest --secure`
+    1. My results: ~250 Mbit/s down, ~90 Mbit/s up.
+    1. Minumum according to some Googling: 10 Mbit/s either way.
 1. Check logs:
     1. Execution client: No log levels in logs. Just `grep rror /data/nethermind/logs/mainnet.logs.txt`
     1. Beacon Node: `grep -e WARN -e ERRO -e CRIT /data/lighthouse/mainnet/beacon/logs/beacon.log`
