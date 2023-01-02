@@ -270,6 +270,19 @@ Unattended-Upgrade::Origins-Pattern {
 1. Get the mobile app.
 1. Sign in on the mobile app.
 
+## Troubleshooting issues
+
+1. Check disks have space: `df -h`
+1. Check CPU load average: `htop`. Should be 0.70 max, times the number of cores. So on an 8-core machine, a load average of 5.6 is the threshold at which the machine is getting overloaded.
+1. Check RAM available: `htop`, see `Mem`.
+1. Check logs:
+    1. Execution client: No log levels in logs. Just `grep rror /data/nethermind/logs/mainnet.logs.txt`
+    1. Beacon Node: `grep -e WARN -e ERRO -e CRIT /data/lighthouse/mainnet/beacon/logs/beacon.log`
+    1. Validator: `grep -e WARN -e ERRO -e CRIT /data/lighthouse/mainnet/validators/logs/validator.log`
+    1. Google any errors.
+    1. Upgrade to latest stable versions if necessary.
+    1. Ask in the Discord server for the client about any errors if they persist after upgrade.
+
 ## Updates
 
 1. Subscribe to the repos to get an email on a new release. For each of these, drop down 'Watch', go to 'Custom' and check 'Releases'.
