@@ -249,7 +249,7 @@ Unattended-Upgrade::Origins-Pattern {
             1. `curl http://192.168.20.41:8545/health`
             1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
         1. Port `8551` is also open for JSON RPC.
-    1. MEV Boost: `/data/mev-boost -mainnet -relay-check -relays https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net`
+    1. MEV Boost: `/data/mev-boost -mainnet -relay-check -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
     1. Beacon Node: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
         1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
         1. Omit `--debug-level warn` initially to see that all is well.
@@ -269,6 +269,7 @@ Unattended-Upgrade::Origins-Pattern {
 1. Got to https://beaconcha.in/user/notifications and add your validator.
 1. Get the mobile app.
 1. Sign in on the mobile app.
+1. Consider turning off the missed attestation notification after a week or so of smooth running. They're quite noisy and if you get too many notifications, you risk missing a more important one such as being offline.
 
 ## Troubleshooting issues
 
@@ -317,8 +318,8 @@ To stop staking, which is different to withdrawal:
 ### You travel
 
 * Open up your chosen SSH port on your NATs before you go.
-* Make sure the laptop you take has the SSH keys for the staking machine.
-* Close the SSH port NAT when you get back.
+* Make sure the laptop you take has the SSH keys for the staking machine - test connecting from outside, using a mobile internet connection.
+* Disable the SSH port NAT when you get back.
 
 ### Your staking machine gets stolen
 
