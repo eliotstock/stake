@@ -281,6 +281,7 @@ Unattended-Upgrade::Origins-Pattern {
     1. `speedtest --secure`
     1. My results: ~250 Mbit/s down, ~90 Mbit/s up.
     1. Minumum according to some Googling: 10 Mbit/s either way.
+    1. If your router is a bit rubbish, like mine, you might want to preemptively reboot it once a month ratehr than have it go down in the middle of the night.
 1. Check logs:
     1. Execution client: No log levels in logs. Just `grep rror /data/nethermind/logs/mainnet.logs.txt`
     1. Beacon Node: `grep -e WARN -e ERRO -e CRIT /data/lighthouse/mainnet/beacon/logs/beacon.log`
