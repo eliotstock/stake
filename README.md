@@ -296,8 +296,12 @@ Unattended-Upgrade::Origins-Pattern {
     1. https://github.com/nethermindeth/nethermind/releases
     1. https://github.com/sigp/lighthouse/releases
     1. https://github.com/flashbots/mev-boost/releases
-1. If using a PPA, update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT.
-1. To check which version you're currently running:
+1. If using a PPA, the update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT.
+1. If you followed the above instructions, here's what you're using:
+    1. `nethermind`: PPA
+    1. `lighthouse`: binary
+    1. `mev-boost`: binary
+1. To check which version you're currently running, run these. But be aware that in the case of a PPA, the running process may in fact still be the older version. You'll need to restart to get the new version to start executing.
     1. `nethermind --version` 1.15.0
     1. `lighthouse --version` 3.3.0
     1. `/data/mev-boost --version` 1.4.0
@@ -306,7 +310,7 @@ Unattended-Upgrade::Origins-Pattern {
     1. Overwrite the existing binary.
     1. Wait till the end of an epoch.
     1. Stop only the updated processes.
-    1. Rest the process.
+    1. Restart the process.
 
 ## Unstaking
 
