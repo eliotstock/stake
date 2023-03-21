@@ -304,7 +304,7 @@ Unattended-Upgrade::Origins-Pattern {
 1. To check which version you're currently running, run these. But be aware that in the case of a PPA, the running process may in fact still be the older version. You'll need to restart to get the new version to start executing.
     1. `nethermind --version` 1.15.0
     1. `lighthouse --version` 3.3.0
-    1. `/data/mev-boost --version` 1.4.0
+    1. `/data/mev-boost --version` 1.5.0
 1. On each new release:
     1. Follow the instructions above again to get a new binary.
     1. Overwrite the existing binary.
