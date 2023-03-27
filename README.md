@@ -150,7 +150,7 @@ Unattended-Upgrade::Origins-Pattern {
 
 1. Follow instructions here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/getting-started. Use the Ubuntu repo.
 1. Create a directory for the Rocks DB: `mkdir /data/nethermind`
-1. Run the client as your normal user `nethermind --config goerli --baseDbPath /data/nethermind --JsonRpc.Enabled true`
+1. Run the client as your normal user `nethermind --config mainnet --baseDbPath /data/nethermind --JsonRpc.Enabled true`
 1. Follow instructions for `systemd` running here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/manage-nethermind-with-systemd, except:
     1. Create the `nethermind` user with a specific home dir: `sudo useradd -m -s /bin/bash -d /data/nethermind nethermind`
     1. Note that `adduser` accepts ` --disabled-password` but the lower level `useradd` does not.
