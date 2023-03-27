@@ -175,11 +175,6 @@ Unattended-Upgrade::Origins-Pattern {
 1. Move the binary out of your home dir:
     1. `sudo mv ./lighthouse /usr/bin`
     1. `sudo chown root:root /usr/bin/lighthouse`
-1. Do the key management stuff: https://lighthouse-book.sigmaprime.io/key-management.html
-    1. Create a password file for this network: `nano stake-goerli.pass` and `chmod 600 ./stake-goerli.pass`
-    1. `lighthouse --network prater account wallet create --name stake-goerli --password-file stake-goerli.pass`
-    1. Write down mnemonic -> sock drawer (not really obvs)
-    1. `lighthouse --network prater account validator create --wallet-name stake-goerli --wallet-password stake-goerli.pass --count 1`
 
 ### MEV-Boost
 
@@ -198,6 +193,11 @@ Unattended-Upgrade::Origins-Pattern {
     1. `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --checkpoint-sync-url https://beaconstate.ethstaker.cc`
         1. Get the checkpoint sync URL from https://eth-clients.github.io/checkpoint-sync-endpoints/
         1. See this thread in the Lighthouse Discord for more details o checks: https://discord.com/channels/605577013327167508/605577013331361793/1019755522985050142
+1. Do the key management stuff for Lighthouse: https://lighthouse-book.sigmaprime.io/key-management.html
+    1. Create a password file for this network: `nano stake.pass` and `chmod 600 ./stake.pass`
+    1. `lighthouse --network mainnet account wallet create --name stake --password-file stake.pass`
+    1. Write down mnemonic -> sock drawer (not really obvs)
+    1. `lighthouse --network mainnet account validator create --wallet-name stake --wallet-password stake.pass --count 1`
 
 ## Staking
 
