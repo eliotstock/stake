@@ -180,7 +180,7 @@ Unattended-Upgrade::Origins-Pattern {
     1. Move the binary: `mv mev-boost /data`
     1. If you have no strong opinions about what kind of relay to use, just use Ultra Sound:
         * `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
-    1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md).
+    1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
 1. Generate a JWT token to be used by the clients:
     1. `openssl rand -hex 32 | tr -d "\n" > "/data/jwtsecret"`
 1. The first time you sync only, or if you've fallen far behind, use a checkpoint sync endpoint for the beacon node:
