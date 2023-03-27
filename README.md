@@ -162,9 +162,9 @@ Unattended-Upgrade::Origins-Pattern {
     1. Disable the `systemd` unit while it isn't working on boot: `sudo systemctl disable nethermind`
 1. Install the consensus client, Lighthouse.
     1. Go to https://github.com/sigp/lighthouse/releases and find the latest (non-portable) release, with suffix `x86_64-unknown-linux-gnu`. Download, extract and delete  it on the host.
-        1. `wget https://github.com/sigp/lighthouse/releases/download/v3.1.0/lighthouse-v3.1.0-x86_64-unknown-linux-gnu.tar.gz`
-        1. `tar -xvf lighthouse-v3.1.0-x86_64-unknown-linux-gnu.tar.gz`
-        1. `rm lighthouse-v3.1.0-x86_64-unknown-linux-gnu.tar.gz`
+        1. `wget https://github.com/sigp/lighthouse/releases/download/v4.0.1/lighthouse-v4.0.1-x86_64-unknown-linux-gnu.tar.gz`
+        1. `tar -xvf lighthouse-*.tar.gz`
+        1. `rm lighthouse-*.tar.gz`
     1. Make sure it runs: `./lighthouse --version`
     1. Move the binary out of your home dir:
         1. `sudo mv ./lighthouse /usr/bin`
