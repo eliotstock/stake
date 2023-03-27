@@ -143,44 +143,55 @@ Unattended-Upgrade::Origins-Pattern {
     1. Any execution client: 30303 (both TCP and UDP)
     1. Lighthouse (consensus client): 9000 (both TCP and UDP)
     1. Only while travelling, SSH: [redacted] TCP
-1. Install the execution client, Nethermind
-    1. Follow instructions here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/getting-started. Use the Ubuntu repo.
-    1. Create a directory for the Rocks DB: `mkdir /data/nethermind`
-    1. Run the client as your normal user `nethermind --config goerli --baseDbPath /data/nethermind --JsonRpc.Enabled true`
-    1. Follow instructions for `systemd` running here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/manage-nethermind-with-systemd, except:
-        1. Create the `nethermind` user with a specific home dir: `sudo useradd -m -s /bin/bash -d /data/nethermind nethermind`
-        1. Note that `adduser` accepts ` --disabled-password` but the lower level `useradd` does not.
-    1. Add the `nethermind` user to sudoers: `sudo usermod -aG sudo nethermind`
-    1. TODO: Maybe not: Set a password for the `nethermind` user
-        1. `sudo -i`
-        1. `passwd nethermind`
-    1. Change to the `nethermind` user: `sudo su nethermind`
-    1. Run the serivce: `sudo service nethermind start`
-    1. Check the output: `journalctl -u nethermind -f`
-    1. Enable autorun: `sudo systemctl enable nethermind`
-    1. TODO: Blocked on docs bug: https://github.com/NethermindEth/nethermind/issues/4482
-    1. Disable the `systemd` unit while it isn't working on boot: `sudo systemctl disable nethermind`
-1. Install the consensus client, Lighthouse.
-    1. Go to https://github.com/sigp/lighthouse/releases and find the latest (non-portable) release, with suffix `x86_64-unknown-linux-gnu`. Download, extract and delete  it on the host.
-        1. `wget https://github.com/sigp/lighthouse/releases/download/v4.0.1/lighthouse-v4.0.1-x86_64-unknown-linux-gnu.tar.gz`
-        1. `tar -xvf lighthouse-*.tar.gz`
-        1. `rm lighthouse-*.tar.gz`
-    1. Make sure it runs: `./lighthouse --version`
-    1. Move the binary out of your home dir:
-        1. `sudo mv ./lighthouse /usr/bin`
-        1. `sudo chown root:root /usr/bin/lighthouse`
-    1. Do the key management stuff: https://lighthouse-book.sigmaprime.io/key-management.html
-        1. Create a password file for this network: `nano stake-goerli.pass` and `chmod 600 ./stake-goerli.pass`
-        1. `lighthouse --network prater account wallet create --name stake-goerli --password-file stake-goerli.pass`
-        1. Write down mnemonic -> sock drawer (not really obvs)
-        1. `lighthouse --network prater account validator create --wallet-name stake-goerli --wallet-password stake-goerli.pass --count 1`
-1. Install MEV-Boost.
-    1. Download the latest binary from https://github.com/flashbots/mev-boost/releases
-    1. Extract and delete the tarball: `tar -xvf mev* && rm mev*.tar.gz`
-    1. Move the binary: `mv mev-boost /data`
-    1. If you have no strong opinions about what kind of relay to use, just use Ultra Sound:
-        * `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
-    1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
+
+## Clients
+
+### Nethermind (execution layer client)
+
+1. Follow instructions here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/getting-started. Use the Ubuntu repo.
+1. Create a directory for the Rocks DB: `mkdir /data/nethermind`
+1. Run the client as your normal user `nethermind --config goerli --baseDbPath /data/nethermind --JsonRpc.Enabled true`
+1. Follow instructions for `systemd` running here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/manage-nethermind-with-systemd, except:
+    1. Create the `nethermind` user with a specific home dir: `sudo useradd -m -s /bin/bash -d /data/nethermind nethermind`
+    1. Note that `adduser` accepts ` --disabled-password` but the lower level `useradd` does not.
+1. Add the `nethermind` user to sudoers: `sudo usermod -aG sudo nethermind`
+1. TODO: Maybe not: Set a password for the `nethermind` user
+    1. `sudo -i`
+    1. `passwd nethermind`
+1. Change to the `nethermind` user: `sudo su nethermind`
+1. Run the serivce: `sudo service nethermind start`
+1. Check the output: `journalctl -u nethermind -f`
+1. Enable autorun: `sudo systemctl enable nethermind`
+1. TODO: Blocked on docs bug: https://github.com/NethermindEth/nethermind/issues/4482
+1. Disable the `systemd` unit while it isn't working on boot: `sudo systemctl disable nethermind`
+
+### Lighthouse (consensus layer client)
+
+1. Go to https://github.com/sigp/lighthouse/releases and find the latest (non-portable) release, with suffix `x86_64-unknown-linux-gnu`. Download, extract and delete  it on the host.
+    1. `wget https://github.com/sigp/lighthouse/releases/download/v4.0.1/lighthouse-v4.0.1-x86_64-unknown-linux-gnu.tar.gz`
+    1. `tar -xvf lighthouse-*.tar.gz`
+    1. `rm lighthouse-*.tar.gz`
+1. Make sure it runs: `./lighthouse --version`
+1. Move the binary out of your home dir:
+    1. `sudo mv ./lighthouse /usr/bin`
+    1. `sudo chown root:root /usr/bin/lighthouse`
+1. Do the key management stuff: https://lighthouse-book.sigmaprime.io/key-management.html
+    1. Create a password file for this network: `nano stake-goerli.pass` and `chmod 600 ./stake-goerli.pass`
+    1. `lighthouse --network prater account wallet create --name stake-goerli --password-file stake-goerli.pass`
+    1. Write down mnemonic -> sock drawer (not really obvs)
+    1. `lighthouse --network prater account validator create --wallet-name stake-goerli --wallet-password stake-goerli.pass --count 1`
+
+### MEV-Boost
+
+1. Download the latest binary from https://github.com/flashbots/mev-boost/releases
+1. Extract and delete the tarball: `tar -xvf mev* && rm mev*.tar.gz`
+1. Move the binary: `mv mev-boost /data`
+1. If you have no strong opinions about what kind of relay to use, just use Ultra Sound:
+    * `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
+1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
+
+### One-time client setup
+
 1. Generate a JWT token to be used by the clients:
     1. `openssl rand -hex 32 | tr -d "\n" > "/data/jwtsecret"`
 1. The first time you sync only, or if you've fallen far behind, use a checkpoint sync endpoint for the beacon node:
