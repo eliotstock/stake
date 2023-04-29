@@ -261,12 +261,14 @@ Unattended-Upgrade::Origins-Pattern {
             1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
         1. Port `8551` is also open for JSON RPC.
     1. MEV Boost: `/data/mev-boost -mainnet -relay-check -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
-    1. Beacon Node: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
+    1. Beacon Node: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --http-address 192.168.20.41 --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
         1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
         1. Omit `--debug-level warn` initially to see that all is well.
+        1. Omit `--http-address 192.168.20.41` if you don't need access to the Beacon Node API on your local network.
         1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DDoS'ed.
         1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
-    1. Validator: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet vc --builder-proposals --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
+    1. Validator: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet vc --beacon-nodes http://192.168.20.41:5052 --builder-proposals --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
+        1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
 1. Check the ports you're listening on with `sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4`. Ignoring the OS services such as `sshd`, you should have:
     1. `192.168.20.41:8545 (LISTEN)`: EL client, JSON RPC for general use
     1. `127.0.0.1:8551 (LISTEN)`: EL client, JSON RPC for the CL client only
@@ -356,6 +358,12 @@ To stop staking, which is different to withdrawal:
 ### You move house
 
 * See "Unstaking" above.
+
+### You need the Beacon Node API on your local network
+
+* `sudo ufw allow 5052/tcp comment 'beacon node api'`
+* `sudo ufw reload`
+* Get the local IP of your host with `ip a` and put it in as the server on the Swagger UI at https://ethereum.github.io/beacon-APIs.
 
 ## Sedge
 
