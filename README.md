@@ -252,7 +252,12 @@ Unattended-Upgrade::Origins-Pattern {
         1. Move around the panes with `C-b [arrow keys]`
         1. Kill a pane with `C-b C-d`
         1. Dettach from the session with `C-b d`
-    1. Execution client: `nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41`
+    1. Execution client
+
+```
+nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41`
+```
+
         1. This one will prompt for your password in order to become root, unfortunately.
         1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
         1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
@@ -363,7 +368,15 @@ To stop staking, which is different to withdrawal:
 
 * `sudo ufw allow 5052/tcp comment 'beacon node api'`
 * `sudo ufw reload`
-* Get the local IP of your host with `ip a` and put it in as the server on the Swagger UI at https://ethereum.github.io/beacon-APIs.
+* Get the local IP of your host with `ip a` (eg. `http://192.168.20.41:5052/`)
+* You won't be able to use the Swagger UI version hosted by the Ethereum Foundation repo at https://ethereum.github.io/beacon-APIs, because it uses `https`. When the browser makes requests to your beacon node, they'll be over straight `http` and you'll get a `Mixed content` error on the browser console. You could serve the API over `https` but it's easier not to.
+* Instead just run Swagger UI locally.
+    * `git clone git@github.com:ethereum/beacon-APIs.git`
+    * `cd beacon-APIs`
+    * `python3 -m http.server 8080`
+    * Open http://localhost:8080 and set the version to `dev` (release number version will fail because we haven't built the `releases` directory).
+    * Set the `server_url` to `http://192.168.20.41:5052/`
+    * Test some API endpoints.
 
 ## Sedge
 
