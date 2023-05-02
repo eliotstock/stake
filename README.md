@@ -245,41 +245,64 @@ Unattended-Upgrade::Origins-Pattern {
 
 ## On server restart
 
-1. Each time the server starts, run these four processes inside `tmux`.
-    1. Run `tmux` first. Refresher:
-        1. Create five panes with `C-b "`
-        1. Make them evenly sized with `C-b :` (to enter the command prompt) then `select-layout even-vertical`
-        1. Move around the panes with `C-b [arrow keys]`
-        1. Kill a pane with `C-b C-d`
-        1. Dettach from the session with `C-b d`
-    1. Execution client
+Each time the server starts, run the below four processes inside `tmux`.
+
+1. Run `tmux` first. Refresher:
+    1. Create five panes with `C-b "`
+    1. Make them evenly sized with `C-b :` (to enter the command prompt) then `select-layout even-vertical`
+    1. Move around the panes with `C-b [arrow keys]`
+    1. Kill a pane with `C-b C-d`
+    1. Dettach from the session with `C-b d`
+
+### Execution client
 
 ```
 nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41`
 ```
 
-        1. This one will prompt for your password in order to become root, unfortunately.
-        1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
-        1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
-        1. Once up and running, check health with:
-            1. `curl http://192.168.20.41:8545/health`
-            1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
-        1. Port `8551` is also open for JSON RPC.
-    1. MEV Boost: `/data/mev-boost -mainnet -relay-check -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
-    1. Beacon Node: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --http-address 192.168.20.41 --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
-        1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
-        1. Omit `--debug-level warn` initially to see that all is well.
-        1. Omit `--http-address 192.168.20.41` if you don't need access to the Beacon Node API on your local network.
-        1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DDoS'ed.
-        1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
-    1. Validator: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet vc --beacon-nodes http://192.168.20.41:5052 --builder-proposals --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
-        1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
-1. Check the ports you're listening on with `sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4`. Ignoring the OS services such as `sshd`, you should have:
-    1. `192.168.20.41:8545 (LISTEN)`: EL client, JSON RPC for general use
-    1. `127.0.0.1:8551 (LISTEN)`: EL client, JSON RPC for the CL client only
-    1. `*:9000 (LISTEN)`: CL client, for the EL client
-    1. `127.0.0.1:5052 (LISTEN)`: CL client, Beacon Node API for general use
-    1. `127.0.0.1:18550 (LISTEN)`: MEV Boost
+1. This one will prompt for your password in order to become root, unfortunately.
+1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
+1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
+1. Once up and running, check health with:
+    1. `curl http://192.168.20.41:8545/health`
+    1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
+1. Port `8551` is also open for JSON RPC.
+
+### MEV Boost
+
+```
+/data/mev-boost -mainnet -relay-check -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money
+```
+
+### Beacon Node
+
+```
+lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --http-address 192.168.20.41 --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>
+```
+
+1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
+1. Omit `--debug-level warn` initially to see that all is well.
+1. Omit `--http-address 192.168.20.41` if you don't need access to the Beacon Node API on your local network.
+1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DDoS'ed.
+1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
+
+### Validator client
+
+```
+lighthouse --network mainnet --datadir /data/lighthouse/mainnet vc --beacon-nodes http://192.168.20.41:5052 --builder-proposals --graffiti eliotstock --suggested-fee-recipient <ADDRESS>
+```
+
+1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
+
+### Check ports
+
+Check the ports you're listening on with `sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4`. Ignoring the OS services such as `sshd`, you should have:
+
+1. `192.168.20.41:8545 (LISTEN)`: EL client, JSON RPC for general use
+1. `127.0.0.1:8551 (LISTEN)`: EL client, JSON RPC for the CL client only
+1. `*:9000 (LISTEN)`: CL client, for the EL client
+1. `127.0.0.1:5052 (LISTEN)`: CL client, Beacon Node API for general use
+1. `127.0.0.1:18550 (LISTEN)`: MEV Boost
 
 ## Monitoring
 
