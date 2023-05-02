@@ -277,12 +277,12 @@ nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mai
 ### Beacon Node
 
 ```
-lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --http-address 192.168.20.41 --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>
+lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --http-address 192.168.20.41 --http-allow-origin "*" --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>
 ```
 
 1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
 1. Omit `--debug-level warn` initially to see that all is well.
-1. Omit `--http-address 192.168.20.41` if you don't need access to the Beacon Node API on your local network.
+1. Omit `--http-address` and `--http-allow-origin` if you don't need access to the Beacon Node API on your local network.
 1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DDoS'ed.
 1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
 
@@ -296,7 +296,11 @@ lighthouse --network mainnet --datadir /data/lighthouse/mainnet vc --beacon-node
 
 ### Check ports
 
-Check the ports you're listening on with `sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4`. Ignoring the OS services such as `sshd`, you should have:
+```
+sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4
+```
+
+Check the ports you're listening on. Ignoring the OS services such as `sshd`, you should have:
 
 1. `192.168.20.41:8545 (LISTEN)`: EL client, JSON RPC for general use
 1. `127.0.0.1:8551 (LISTEN)`: EL client, JSON RPC for the CL client only
