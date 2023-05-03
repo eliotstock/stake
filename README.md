@@ -341,7 +341,10 @@ Check the ports you're listening on. Ignoring the OS services such as `sshd`, yo
     1. https://github.com/nethermindeth/nethermind/releases
     1. https://github.com/sigp/lighthouse/releases
     1. https://github.com/flashbots/mev-boost/releases
-1. If using a PPA, the update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT.
+1. If using a PPA, the update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT. It might also take some time to install. If you're in a rush to upgrade:
+    1. `sudo apt update`
+    1. `apt list --upgradable` and expect to see `nerthermind` in there
+    1. `sudo apt upgrade`
 1. If you followed the above instructions, here's what you're using:
     1. `nethermind`: PPA
     1. `lighthouse`: binary
