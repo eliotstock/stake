@@ -1,9 +1,15 @@
 # How to build an Ethereum staking machine
 
+These instructions are up to date wrt the following releases.
+
+* `nethermind` 1.18.2
+* `lighthouse` 4.2.0
+* `mev-boost` 1.5.0
+
 ## Initial host setup
 
 1. (Optional) Update the firmware in your router, factory reset, reconfigure.
-1. Grab an Intel NUC.
+1. Grab an Intel NUC. Mine is a i5-1135G7, 4 cores.
 1. Set the machine to restart after a power failure.
     1. `F2` during boot to get into BIOS settings
     1. Power > Secondary power settings
@@ -38,6 +44,7 @@
     1. `sudo apt install fio`
     1. `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=random_read_write.fio --bs=4k --iodepth=64 --size=4G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
+    1. If you can't remember what drive you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
 1. Disable `cloud-init`
     1. `sudo touch /etc/cloud/cloud-init.disabled`
     1. `sudo reboot`
@@ -257,7 +264,7 @@ Each time the server starts, run the below four processes inside `tmux`.
 ### Execution client
 
 ```
-nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41`
+nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41
 ```
 
 1. This one will prompt for your password in order to become root, unfortunately.
