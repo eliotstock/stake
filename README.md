@@ -264,11 +264,22 @@ Each time the server starts, run the below four processes inside `tmux`.
 ### Execution client
 
 ```
-nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41
+nethermind \
+  --datadir /data/nethermind \
+  --config /usr/share/nethermind/configs/mainnet.cfg \
+  --JsonRpc.Enabled true \
+  --JsonRpc.JwtSecretFile /data/jwtsecret \
+  --JsonRpc.Host 192.168.20.41 \
+  --HealthChecks.Enabled true \
+  --HealthChecks.UIEnabled true \
+  --Pruning.FullPruningTrigger VolumeFreeSpace \
+  --Pruning.Mode Full \
+  --Pruning.FullPruningThresholdMb 307200
 ```
 
 1. This one will prompt for your password in order to become root, unfortunately.
 1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
+1. This will prune the database once the remaining space on the drive falls below 300 GB. Othwerwise pruning will be manual and you'll have to watch your disk space.
 1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
 1. Once up and running, check health with:
     1. `curl http://192.168.20.41:8545/health`
@@ -278,13 +289,27 @@ nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mai
 ### MEV Boost
 
 ```
-/data/mev-boost -mainnet -relay-check -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money
+/data/mev-boost \
+  -mainnet \
+  -relay-check \
+  -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money
 ```
 
 ### Beacon Node
 
 ```
-lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --http-address 192.168.20.41 --http-allow-origin "*" --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>
+lighthouse \
+  --network mainnet \
+  --datadir /data/lighthouse/mainnet \
+  bn \
+  --execution-endpoint http://localhost:8551 \
+  --execution-jwt /data/jwtsecret \
+  --http \
+  --http-address 192.168.20.41 \
+  --http-allow-origin "*" \
+  --builder http://localhost:18550 \
+  --graffiti eliotstock \
+  --suggested-fee-recipient <ADDRESS>
 ```
 
 1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
@@ -296,7 +321,14 @@ lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-e
 ### Validator client
 
 ```
-lighthouse --network mainnet --datadir /data/lighthouse/mainnet vc --beacon-nodes http://192.168.20.41:5052 --builder-proposals --graffiti eliotstock --suggested-fee-recipient <ADDRESS>
+lighthouse \
+  --network mainnet \
+  --datadir /data/lighthouse/mainnet \
+  vc \
+  --beacon-nodes http://192.168.20.41:5052 \
+  --builder-proposals \
+  --graffiti eliotstock \
+  --suggested-fee-recipient <ADDRESS>
 ```
 
 1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
