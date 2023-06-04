@@ -210,6 +210,12 @@ Unattended-Upgrade::Origins-Pattern {
     1. Write down mnemonic -> sock drawer (not really obvs)
     1. `lighthouse --network mainnet account validator create --wallet-name stake --wallet-password stake.pass --count 1`
 1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk.
+1. To dig deeper on I/O performance:
+    1. `sudo apt install sysstat`
+    1. `sudo nano /etc/default/sysstat` and change `false` to `true`
+    1. Reboot and restart all processes
+    1. `sar` and check the `%iowait` column
+    1. `iostat` (or `iostat -x 1` for repeated sampling) and check `%util` for the SSD.
 
 ## Staking
 
