@@ -9,7 +9,11 @@ These instructions are up to date wrt the following releases.
 ## Initial host setup
 
 1. (Optional) Update the firmware in your router, factory reset, reconfigure.
-1. Grab an Intel NUC. Mine is a i5-1135G7, 4 cores.
+1. Grab an Intel NUC. Specs for mine:
+    1. i5-1135G7, 4 cores. Onlyt two slots (one M.2, one 2.5" SATA)
+    1. 32 GB RAM
+    1. Small drive (OS) is a Samsung SSD 980 250 GB M2
+    1. Big drive (data) is a Crucial BX500 2TB 2.5" SSD. "On the box" it says "SATA 6GB/s - Up to 540MB/s Read - Up to 500MB/s Write". The speed of this drive will affect your performance and re-sync time more than anything else. I don't recommend this drive, which takes about 30 hours to sync. Wish I'd got an NVMe.
 1. Set the machine to restart after a power failure.
     1. `F2` during boot to get into BIOS settings
     1. Power > Secondary power settings
@@ -44,7 +48,7 @@ These instructions are up to date wrt the following releases.
     1. `sudo apt install fio`
     1. `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=random_read_write.fio --bs=4k --iodepth=64 --size=4G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
-    1. If you can't remember what drive you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
+    1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
 1. Disable `cloud-init`
     1. `sudo touch /etc/cloud/cloud-init.disabled`
     1. `sudo reboot`
@@ -192,7 +196,7 @@ Unattended-Upgrade::Origins-Pattern {
     * `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
 1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
 
-### One-time client setup
+### Initial sync
 
 1. Generate a JWT token to be used by the clients:
     1. `openssl rand -hex 32 | tr -d "\n" > "/data/jwtsecret"`
@@ -205,6 +209,7 @@ Unattended-Upgrade::Origins-Pattern {
     1. `lighthouse --network mainnet account wallet create --name stake --password-file stake.pass`
     1. Write down mnemonic -> sock drawer (not really obvs)
     1. `lighthouse --network mainnet account validator create --wallet-name stake --wallet-password stake.pass --count 1`
+1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk.
 
 ## Staking
 
