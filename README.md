@@ -270,6 +270,7 @@ Each time the server starts, run the below four processes inside `tmux`.
     1. Make them evenly sized with `C-b :` (to enter the command prompt) then `select-layout even-vertical`
     1. Move around the panes with `C-b [arrow keys]`
     1. Kill a pane with `C-b C-d`
+    1. Give the panes titles of their index and the command running in them with `set -g pane-border-format "#{pane_index} #{pane_current_command}"`
     1. Dettach from the session with `C-b d`
 
 ### Execution client
