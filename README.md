@@ -2,7 +2,7 @@
 
 These instructions are up to date wrt the following releases.
 
-* `nethermind` 1.18.2
+* `nethermind` 1.19
 * `lighthouse` 4.2.0
 * `mev-boost` 1.5.0
 
@@ -209,7 +209,7 @@ Unattended-Upgrade::Origins-Pattern {
     1. `lighthouse --network mainnet account wallet create --name stake --password-file stake.pass`
     1. Write down mnemonic -> sock drawer (not really obvs)
     1. `lighthouse --network mainnet account validator create --wallet-name stake --wallet-password stake.pass --count 1`
-1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk.
+1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk. As of NM v1.19, a re-sync takes 30 hours for me with this drive.
 1. To dig deeper on I/O performance:
     1. `sudo apt install sysstat`
     1. `sudo nano /etc/default/sysstat` and change `false` to `true`
@@ -326,7 +326,7 @@ lighthouse \
 1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
 1. Omit `--debug-level warn` initially to see that all is well.
 1. Omit `--http-address` and `--http-allow-origin` if you don't need access to the Beacon Node API on your local network.
-1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DDoS'ed.
+1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DoS'ed.
 1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
 
 ### Validator client
