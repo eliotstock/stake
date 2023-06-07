@@ -209,7 +209,7 @@ Unattended-Upgrade::Origins-Pattern {
     1. `lighthouse --network mainnet account wallet create --name stake --password-file stake.pass`
     1. Write down mnemonic -> sock drawer (not really obvs)
     1. `lighthouse --network mainnet account validator create --wallet-name stake --wallet-password stake.pass --count 1`
-1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk. As of NM v1.19, a re-sync takes 30 hours for me with this drive.
+1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk. As of NM v1.19, a re-sync takes two to three days for me with this drive.
 1. To dig deeper on I/O performance:
     1. `sudo apt install sysstat`
     1. `sudo nano /etc/default/sysstat` and change `false` to `true`
@@ -251,7 +251,7 @@ Unattended-Upgrade::Origins-Pattern {
         1. `sudo cp -r /data/validator_keys /media/usb`
         1. `sudo eject /media/usb`
 1. On the machine where you have MetaMask and your hardware wallet connected:
-    1. Run through the checklist at https://launchpad.ethereum.org/en/checklist and make sure everything tickety-boo.
+    1. Run through the checklist at https://launchpad.ethereum.org/en/checklist and make sure everything is tickety-boo.
     1. Get to https://launchpad.ethereum.org/en/upload-deposit-data where you upload your deposit data.
     1. Plug in the USB drive and mount it.
     1. Get as far as https://launchpad.ethereum.org/en/generate-keys in the Launchpad flow. This is where you upload your deposit data JSON file, connect using the account you have on your hardware wallet, and pay the 32 ETH.
@@ -265,8 +265,8 @@ Unattended-Upgrade::Origins-Pattern {
 
 Each time the server starts, run the below four processes inside `tmux`.
 
-1. Run `tmux` first. Refresher:
-    1. Create five panes with `C-b "`
+1. Run `tmux` first. This will keep the processes you start running after you disconnect, rather than using `systemd`. `tmux` refresher:
+    1. Create four panes with `C-b "`
     1. Make them evenly sized with `C-b :` (to enter the command prompt) then `select-layout even-vertical`
     1. Move around the panes with `C-b [arrow keys]`
     1. Kill a pane with `C-b C-d`
