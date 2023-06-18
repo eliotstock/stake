@@ -337,7 +337,7 @@ Each time the server starts, run the below four processes inside `tmux`.
 Since `nethermind` is running with `systemd`, you only need to follow the logs:
 
 ```
-journalctl -u nethermind -f | ccze -A
+journalctl -u nethermind -f | ccze
 ```
 
 ### MEV Boost
@@ -345,7 +345,7 @@ journalctl -u nethermind -f | ccze -A
 Since `mev-boost` is running with `systemd`, you only need to follow the logs:
 
 ```
-journalctl -u mev-boost -f | ccze -A
+journalctl -u mev-boost -f | ccze
 ```
 
 ### Beacon Node
