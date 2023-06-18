@@ -6,7 +6,7 @@ These instructions are up to date wrt the following releases.
 * `lighthouse` 4.2.0
 * `mev-boost` 1.5.0
 
-## Initial host setup
+## Hardware and OS
 
 1. (Optional) Update the firmware in your router, factory reset, reconfigure.
 1. Grab an Intel NUC. Specs for mine:
@@ -159,7 +159,7 @@ Unattended-Upgrade::Origins-Pattern {
 
 ### Nethermind (execution layer client)
 
-1. Add the PPA and install the package. See `https://docs.nethermind.io/nethermind/installing-nethermind/download-sources#ubuntu`
+1. Add the PPA and install the package. See Nethermind's [docs](https://docs.nethermind.io/nethermind/installing-nethermind/download-sources#ubuntu).
 1. Create a directory for the Rocks DBs and logs: `mkdir /data/nethermind`
 1. Create a `nethermind` user but do NOT create a home directory and this user should never log in, so they should not have a shell: `sudo useradd -M -s /bin/false nethermind`
 1. Create a `systemd` unit file as follows `sudo nano /etc/systemd/system/nethermind.service`:
@@ -187,12 +187,13 @@ WantedBy=default.target
 ```
 1. Create an `.env` file as follows `nano /data/nethermind/.env`:
 ```
+DOTNET_BUNDLE_EXTRACT_BASE_DIR = /data/nethermind
 NETHERMIND_JSONRPCCONFIG_ENABLED = true
 NETHERMIND_JSONRPCCONFIG_JWTSECRETFILE = /data/jwtsecret
 NETHERMIND_JSONRPCCONFIG_HOST = 192.168.20.41
 NETHERMIND_HEALTHCHECKSCONFIG_ENABLED = true
 NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
-# Not working. See bug.
+# Not working. See bug: https://github.com/NethermindEth/nethermind/issues/5738.
 # NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTRIGGER = VolumeFreeSpace
 # NETHERMIND_PRUNINGCONFIG_MODE = Full
 # NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTHRESHOLDMB 307200
@@ -206,23 +207,17 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. `sudo systemctl start nethermind.service`
     1. `sudo systemctl status nethermind.service`
     1. `sudo systemctl enable nethermind.service`
-1. Follow the logs:
+1. Follow the logs for a bit to check it's working:
     1. `journalctl -u nethermind -f`
-1. TODO: All the below is obsolete and about the be replaced.
-1. Run the client as your normal user `nethermind --config mainnet --baseDbPath /data/nethermind --JsonRpc.Enabled true`
-1. Follow instructions for `systemd` running here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/manage-nethermind-with-systemd, except:
-    1. Create the `nethermind` user with a specific home dir: `sudo useradd -m -s /bin/bash -d /data/nethermind nethermind`
-    1. Note that `adduser` accepts ` --disabled-password` but the lower level `useradd` does not.
-1. Add the `nethermind` user to sudoers: `sudo usermod -aG sudo nethermind`
-1. TODO: Maybe not: Set a password for the `nethermind` user
-    1. `sudo -i`
-    1. `passwd nethermind`
-1. Change to the `nethermind` user: `sudo su nethermind`
-1. Run the serivce: `sudo service nethermind start`
-1. Check the output: `journalctl -u nethermind -f`
-1. Enable autorun: `sudo systemctl enable nethermind`
-1. TODO: Blocked on docs bug: https://github.com/NethermindEth/nethermind/issues/4482
-1. Disable the `systemd` unit while it isn't working on boot: `sudo systemctl disable nethermind`
+1. The (commented) config above will prune the database once the remaining space on the drive falls below 300 GB. Othwerwise pruning will be manual and you'll have to watch your disk space.
+1. Once up and running, check health with:
+    1. `curl http://192.168.20.41:8545/health`
+    1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
+1. Something to note on the executables.
+    1. `/usr/bin/nethermind` is just a shell script that runs either:
+        * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
+        * `/usr/share/nethermind/Nethermind.Launcher`, if there aren't
+    1. There seems to be no need for this. If you just run `/usr/share/nethermind/Nethermind.Runner`, it works. See this [bug](https://github.com/NethermindEth/nethermind/issues/4703).
 
 ### Lighthouse (consensus layer client)
 
@@ -323,37 +318,11 @@ Each time the server starts, run the below four processes inside `tmux`.
 
 ### Execution client
 
-```
-nethermind \
-  --datadir /data/nethermind \
-  --config /usr/share/nethermind/configs/mainnet.cfg \
-  --JsonRpc.Enabled true \
-  --JsonRpc.JwtSecretFile /data/jwtsecret \
-  --JsonRpc.Host 192.168.20.41 \
-  --HealthChecks.Enabled true \
-  --HealthChecks.UIEnabled true \
-  --Pruning.FullPruningTrigger VolumeFreeSpace \
-  --Pruning.Mode Full \
-  --Pruning.FullPruningThresholdMb 307200
-```
+Since `nethermind` is running with `systemd`, you only need to follow the logs:
 
-1. This one will prompt for your password in order to become root, unfortunately.
-1. TODO: Remove the need to run this as root
-    1. `/usr/bin/nethermind` is just a shell script that runs either:
-        * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
-        * `/usr/share/nethermind/Nethermind.Launcher`, if there aren't
-    1. There seems to be no need for this. If you just run `/usr/share/nethermind/Nethermind.Runner`, it works. See this [bug](https://github.com/NethermindEth/nethermind/issues/4703).
-    1. Replace `nethermind` with `/usr/share/nethermind/Nethermind.Runner` in the above command line, but only once we're ready for this to run as the `nethermind` user.
-    1. `sudo chown -R nethermindeth:nethermindeth /data/nethermind`
-    1. `sudo chown -R nethermindeth:nethermindeth /usr/share/nethermind`
-    1. Continue above under installation with `systemd` stuff.
-1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
-1. This will prune the database once the remaining space on the drive falls below 300 GB. Othwerwise pruning will be manual and you'll have to watch your disk space.
-1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
-1. Once up and running, check health with:
-    1. `curl http://192.168.20.41:8545/health`
-    1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
-1. Port `8551` is also open for JSON RPC.
+```
+journalctl -u nethermind -f
+```
 
 ### MEV Boost
 
