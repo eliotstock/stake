@@ -180,12 +180,7 @@ WorkingDirectory=/data/nethermind
 EnvironmentFile=/data/nethermind/.env
 ExecStart=/usr/share/nethermind/Nethermind.Runner \
     --datadir /data/nethermind \
-    --config /usr/share/nethermind/configs/mainnet.cfg \
-    --JsonRpc.Enabled true \
-    --HealthChecks.Enabled true \
-    --HealthChecks.UIEnabled true \
-    --JsonRpc.JwtSecretFile /data/jwtsecret \
-    --JsonRpc.Host 192.168.20.41
+    --config /usr/share/nethermind/configs/mainnet.cfg
 
 [Install]
 WantedBy=default.target
@@ -197,6 +192,10 @@ NETHERMIND_JSONRPCCONFIG_JWTSECRETFILE = /data/jwtsecret
 NETHERMIND_JSONRPCCONFIG_HOST = 192.168.20.41
 NETHERMIND_HEALTHCHECKSCONFIG_ENABLED = true
 NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
+# Not working. See bug.
+# NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTRIGGER = VolumeFreeSpace
+# NETHERMIND_PRUNINGCONFIG_MODE = Full
+# NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTHRESHOLDMB 307200
 ```
 1. Make `nethermind` own the file: `sudo chown nethermind /data/nethermind/.env`
 1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `nethermind` user:
