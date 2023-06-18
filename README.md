@@ -148,8 +148,57 @@ Unattended-Upgrade::Origins-Pattern {
 
 ### Nethermind (execution layer client)
 
-1. Follow instructions here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/getting-started. Use the Ubuntu repo.
-1. Create a directory for the Rocks DB: `mkdir /data/nethermind`
+1. Add the PPA and install the package. See `https://docs.nethermind.io/nethermind/installing-nethermind/download-sources#ubuntu`
+1. Create a directory for the Rocks DBs and logs: `mkdir /data/nethermind`
+1. Create a `nethermind` user but do NOT create a home directory and this user should never log in, so they should not have a shell: `sudo useradd -M -s /bin/false nethermind`
+1. Create a `systemd` unit file as follows `sudo nano /etc/systemd/system/nethermind.service`:
+```
+[Unit]
+Description=Nethermind Ethereum Client
+After=network.target
+Wants=network.target
+
+[Service]
+User=nethermind
+Group=nethermind
+Type=simple
+Restart=always
+RestartSec=5
+TimeoutStopSec=180
+WorkingDirectory=/data/nethermind
+EnvironmentFile=/data/nethermind/.env
+ExecStart=/usr/share/nethermind/Nethermind.Runner \
+    --datadir /data/nethermind \
+    --config /usr/share/nethermind/configs/mainnet.cfg \
+    --JsonRpc.Enabled true \
+    --HealthChecks.Enabled true \
+    --HealthChecks.UIEnabled true \
+    --JsonRpc.JwtSecretFile /data/jwtsecret \
+    --JsonRpc.Host 192.168.20.41
+
+[Install]
+WantedBy=default.target
+```
+1. Create an `.env` file as follows `nano /data/nethermind/.env`:
+```
+NETHERMIND_JSONRPCCONFIG_ENABLED = true
+NETHERMIND_JSONRPCCONFIG_JWTSECRETFILE = /data/jwtsecret
+NETHERMIND_JSONRPCCONFIG_HOST = 192.168.20.41
+NETHERMIND_HEALTHCHECKSCONFIG_ENABLED = true
+NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
+```
+1. Make `nethermind` own the file: `sudo chown nethermind /data/nethermind/.env`
+1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `nethermind` user:
+    1. `sudo chown -R nethermind /data/nethermind`
+    1. `sudo chown -R nethermind /usr/share/nethermind`
+1. Start the service and enable it on boot:
+    1. `sudo systemctl daemon-reload`
+    1. `sudo systemctl start nethermind.service`
+    1. `sudo systemctl status nethermind.service`
+    1. `sudo systemctl enable nethermind.service`
+1. Follow the logs:
+    1. `journalctl -u nethermind -f`
+1. TODO: All the below is obsolete and about the be replaced.
 1. Run the client as your normal user `nethermind --config mainnet --baseDbPath /data/nethermind --JsonRpc.Enabled true`
 1. Follow instructions for `systemd` running here: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/manage-nethermind-with-systemd, except:
     1. Create the `nethermind` user with a specific home dir: `sudo useradd -m -s /bin/bash -d /data/nethermind nethermind`
@@ -253,7 +302,15 @@ Unattended-Upgrade::Origins-Pattern {
         1. Kill a pane with `C-b C-d`
         1. Dettach from the session with `C-b d`
     1. Execution client: `nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41`
-        1. This one will prompt for your password in order to become root, unfortunately.
+        1. TODO: Remove the need to run this as root
+            1. `/usr/bin/nethermind` is just a shell script that runs either:
+                * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
+                * `/usr/share/nethermind/Nethermind.Launcher`, if there aren't
+            1. There seems to be no need for this. If you just run `/usr/share/nethermind/Nethermind.Runner`, it works. See this [bug](https://github.com/NethermindEth/nethermind/issues/4703).
+            1. Replace `nethermind` with `/usr/share/nethermind/Nethermind.Runner` in the above command line, but only once we're ready for this to run as the `nethermind` user.
+            1. `sudo chown -R nethermindeth:nethermindeth /data/nethermind`
+            1. `sudo chown -R nethermindeth:nethermindeth /usr/share/nethermind`
+            1. Continue above under installation with `systemd` stuff.
         1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
         1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
         1. Once up and running, check health with:
