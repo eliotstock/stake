@@ -1,9 +1,19 @@
 # How to build an Ethereum staking machine
 
+These instructions are up to date wrt the following releases.
+
+* `nethermind` 1.19
+* `lighthouse` 4.2.0
+* `mev-boost` 1.5.0
+
 ## Initial host setup
 
 1. (Optional) Update the firmware in your router, factory reset, reconfigure.
-1. Grab an Intel NUC.
+1. Grab an Intel NUC. Specs for mine:
+    1. i5-1135G7, 4 cores. Onlyt two slots (one M.2, one 2.5" SATA)
+    1. 32 GB RAM
+    1. Small drive (OS) is a Samsung SSD 980 250 GB M2
+    1. Big drive (data) is a Crucial BX500 2TB 2.5" SSD. "On the box" it says "SATA 6GB/s - Up to 540MB/s Read - Up to 500MB/s Write". The speed of this drive will affect your performance and re-sync time more than anything else. I don't recommend this drive, which takes about 30 hours to sync. Wish I'd got an NVMe.
 1. Set the machine to restart after a power failure.
     1. `F2` during boot to get into BIOS settings
     1. Power > Secondary power settings
@@ -38,6 +48,7 @@
     1. `sudo apt install fio`
     1. `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=random_read_write.fio --bs=4k --iodepth=64 --size=4G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
+    1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
 1. Disable `cloud-init`
     1. `sudo touch /etc/cloud/cloud-init.disabled`
     1. `sudo reboot`
@@ -234,7 +245,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     * `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
 1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
 
-### One-time client setup
+### Initial sync
 
 1. Generate a JWT token to be used by the clients:
     1. `openssl rand -hex 32 | tr -d "\n" > "/data/jwtsecret"`
@@ -247,6 +258,13 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. `lighthouse --network mainnet account wallet create --name stake --password-file stake.pass`
     1. Write down mnemonic -> sock drawer (not really obvs)
     1. `lighthouse --network mainnet account validator create --wallet-name stake --wallet-password stake.pass --count 1`
+1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk. As of NM v1.19, a re-sync takes two to three days for me with this drive.
+1. To dig deeper on I/O performance:
+    1. `sudo apt install sysstat`
+    1. `sudo nano /etc/default/sysstat` and change `false` to `true`
+    1. Reboot and restart all processes
+    1. `sar` and check the `%iowait` column
+    1. `iostat` (or `iostat -x 1` for repeated sampling) and check `%util` for the SSD.
 
 ## Staking
 
@@ -282,7 +300,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
         1. `sudo cp -r /data/validator_keys /media/usb`
         1. `sudo eject /media/usb`
 1. On the machine where you have MetaMask and your hardware wallet connected:
-    1. Run through the checklist at https://launchpad.ethereum.org/en/checklist and make sure everything tickety-boo.
+    1. Run through the checklist at https://launchpad.ethereum.org/en/checklist and make sure everything is tickety-boo.
     1. Get to https://launchpad.ethereum.org/en/upload-deposit-data where you upload your deposit data.
     1. Plug in the USB drive and mount it.
     1. Get as far as https://launchpad.ethereum.org/en/generate-keys in the Launchpad flow. This is where you upload your deposit data JSON file, connect using the account you have on your hardware wallet, and pay the 32 ETH.
@@ -294,44 +312,110 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 
 ## On server restart
 
-1. Each time the server starts, run these four processes inside `tmux`.
-    1. Run `tmux` first. Refresher:
-        1. Create five panes with `C-b "`
-        1. Make them evenly sized with `C-b :` (to enter the command prompt) then `select-layout even-vertical`
-        1. Move around the panes with `C-b [arrow keys]`
-        1. Kill a pane with `C-b C-d`
-        1. Dettach from the session with `C-b d`
-    1. Execution client: `nethermind --datadir /data/nethermind --config /usr/share/nethermind/configs/mainnet.cfg --JsonRpc.Enabled true --HealthChecks.Enabled true --HealthChecks.UIEnabled true --JsonRpc.JwtSecretFile /data/jwtsecret --JsonRpc.Host 192.168.20.41`
-        1. TODO: Remove the need to run this as root
-            1. `/usr/bin/nethermind` is just a shell script that runs either:
-                * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
-                * `/usr/share/nethermind/Nethermind.Launcher`, if there aren't
-            1. There seems to be no need for this. If you just run `/usr/share/nethermind/Nethermind.Runner`, it works. See this [bug](https://github.com/NethermindEth/nethermind/issues/4703).
-            1. Replace `nethermind` with `/usr/share/nethermind/Nethermind.Runner` in the above command line, but only once we're ready for this to run as the `nethermind` user.
-            1. `sudo chown -R nethermindeth:nethermindeth /data/nethermind`
-            1. `sudo chown -R nethermindeth:nethermindeth /usr/share/nethermind`
-            1. Continue above under installation with `systemd` stuff.
-        1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
-        1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
-        1. Once up and running, check health with:
-            1. `curl http://192.168.20.41:8545/health`
-            1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
-        1. Port `8551` is also open for JSON RPC.
-    1. MEV Boost: `/data/mev-boost -mainnet -relay-check -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
-    1. Beacon Node: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --http --http-address 192.168.20.41 --builder http://localhost:18550 --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
-        1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
-        1. Omit `--debug-level warn` initially to see that all is well.
-        1. Omit `--http-address 192.168.20.41` if you don't need access to the Beacon Node API on your local network.
-        1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DDoS'ed.
-        1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
-    1. Validator: `lighthouse --network mainnet --datadir /data/lighthouse/mainnet vc --beacon-nodes http://192.168.20.41:5052 --builder-proposals --graffiti eliotstock --suggested-fee-recipient <ADDRESS>`
-        1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
-1. Check the ports you're listening on with `sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4`. Ignoring the OS services such as `sshd`, you should have:
-    1. `192.168.20.41:8545 (LISTEN)`: EL client, JSON RPC for general use
-    1. `127.0.0.1:8551 (LISTEN)`: EL client, JSON RPC for the CL client only
-    1. `*:9000 (LISTEN)`: CL client, for the EL client
-    1. `127.0.0.1:5052 (LISTEN)`: CL client, Beacon Node API for general use
-    1. `127.0.0.1:18550 (LISTEN)`: MEV Boost
+Each time the server starts, run the below four processes inside `tmux`.
+
+1. Run `tmux` first. This will keep the processes you start running after you disconnect, rather than using `systemd`. `tmux` refresher:
+    1. Create four panes with `C-b "`
+    1. Make them evenly sized with `C-b :` (to enter the command prompt) then `select-layout even-vertical`
+    1. Move around the panes with `C-b [arrow keys]`
+    1. Kill a pane with `C-b C-d`
+    1. Give the panes titles of their index and the command running in them with `set -g pane-border-format "#{pane_index} #{pane_current_command}"`
+    1. Dettach from the session with `C-b d`
+
+### Execution client
+
+```
+nethermind \
+  --datadir /data/nethermind \
+  --config /usr/share/nethermind/configs/mainnet.cfg \
+  --JsonRpc.Enabled true \
+  --JsonRpc.JwtSecretFile /data/jwtsecret \
+  --JsonRpc.Host 192.168.20.41 \
+  --HealthChecks.Enabled true \
+  --HealthChecks.UIEnabled true \
+  --Pruning.FullPruningTrigger VolumeFreeSpace \
+  --Pruning.Mode Full \
+  --Pruning.FullPruningThresholdMb 307200
+```
+
+1. This one will prompt for your password in order to become root, unfortunately.
+1. TODO: Remove the need to run this as root
+    1. `/usr/bin/nethermind` is just a shell script that runs either:
+        * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
+        * `/usr/share/nethermind/Nethermind.Launcher`, if there aren't
+    1. There seems to be no need for this. If you just run `/usr/share/nethermind/Nethermind.Runner`, it works. See this [bug](https://github.com/NethermindEth/nethermind/issues/4703).
+    1. Replace `nethermind` with `/usr/share/nethermind/Nethermind.Runner` in the above command line, but only once we're ready for this to run as the `nethermind` user.
+    1. `sudo chown -R nethermindeth:nethermindeth /data/nethermind`
+    1. `sudo chown -R nethermindeth:nethermindeth /usr/share/nethermind`
+    1. Continue above under installation with `systemd` stuff.
+1. You may instead use `--log DEBUG` if you run into trouble. Default is `INFO`.
+1. This will prune the database once the remaining space on the drive falls below 300 GB. Othwerwise pruning will be manual and you'll have to watch your disk space.
+1. You can wait for this to sync before you continue, but you don't need to. The beacon node will retry if the execution client isn't sync'ed yet.
+1. Once up and running, check health with:
+    1. `curl http://192.168.20.41:8545/health`
+    1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
+1. Port `8551` is also open for JSON RPC.
+
+### MEV Boost
+
+```
+/data/mev-boost \
+  -mainnet \
+  -relay-check \
+  -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money
+```
+
+### Beacon Node
+
+```
+lighthouse \
+  --network mainnet \
+  --datadir /data/lighthouse/mainnet \
+  bn \
+  --execution-endpoint http://localhost:8551 \
+  --execution-jwt /data/jwtsecret \
+  --http \
+  --http-address 192.168.20.41 \
+  --http-allow-origin "*" \
+  --builder http://localhost:18550 \
+  --graffiti eliotstock \
+  --suggested-fee-recipient <ADDRESS>
+```
+
+1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
+1. Omit `--debug-level warn` initially to see that all is well.
+1. Omit `--http-address` and `--http-allow-origin` if you don't need access to the Beacon Node API on your local network.
+1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DoS'ed.
+1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
+
+### Validator client
+
+```
+lighthouse \
+  --network mainnet \
+  --datadir /data/lighthouse/mainnet \
+  vc \
+  --beacon-nodes http://192.168.20.41:5052 \
+  --builder-proposals \
+  --graffiti eliotstock \
+  --suggested-fee-recipient <ADDRESS>
+```
+
+1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
+
+### Check ports
+
+```
+sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4
+```
+
+Check the ports you're listening on. Ignoring the OS services such as `sshd`, you should have:
+
+1. `192.168.20.41:8545 (LISTEN)`: EL client, JSON RPC for general use
+1. `127.0.0.1:8551 (LISTEN)`: EL client, JSON RPC for the CL client only
+1. `*:9000 (LISTEN)`: CL client, for the EL client
+1. `127.0.0.1:5052 (LISTEN)`: CL client, Beacon Node API for general use
+1. `127.0.0.1:18550 (LISTEN)`: MEV Boost
 
 ## Monitoring
 
@@ -366,7 +450,10 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. https://github.com/nethermindeth/nethermind/releases
     1. https://github.com/sigp/lighthouse/releases
     1. https://github.com/flashbots/mev-boost/releases
-1. If using a PPA, the update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT.
+1. If using a PPA, the update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT. It might also take some time to install. If you're in a rush to upgrade:
+    1. `sudo apt update`
+    1. `apt list --upgradable` and expect to see `nerthermind` in there
+    1. `sudo apt upgrade`
 1. If you followed the above instructions, here's what you're using:
     1. `nethermind`: PPA
     1. `lighthouse`: binary
@@ -420,7 +507,15 @@ To stop staking, which is different to withdrawal:
 
 * `sudo ufw allow 5052/tcp comment 'beacon node api'`
 * `sudo ufw reload`
-* Get the local IP of your host with `ip a` and put it in as the server on the Swagger UI at https://ethereum.github.io/beacon-APIs.
+* Get the local IP of your host with `ip a` (eg. `http://192.168.20.41:5052/`)
+* You won't be able to use the Swagger UI version hosted by the Ethereum Foundation repo at https://ethereum.github.io/beacon-APIs, because it uses `https`. When the browser makes requests to your beacon node, they'll be over straight `http` and you'll get a `Mixed content` error on the browser console. You could serve the API over `https` but it's easier not to.
+* Instead just run Swagger UI locally.
+    * `git clone git@github.com:ethereum/beacon-APIs.git`
+    * `cd beacon-APIs`
+    * `python3 -m http.server 8080`
+    * Open http://localhost:8080 and set the version to `dev` (release number version will fail because we haven't built the `releases` directory).
+    * Set the `server_url` to `http://192.168.20.41:5052/`
+    * Test some API endpoints.
 
 ## Sedge
 
