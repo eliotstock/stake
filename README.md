@@ -232,12 +232,25 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 
 ### MEV-Boost
 
-1. Download the latest binary from https://github.com/flashbots/mev-boost/releases
+1. There are no Ubuntu packages for MEV-Boost. Download the latest binary from https://github.com/flashbots/mev-boost/releases.
 1. Extract and delete the tarball: `tar -xvf mev* && rm mev*.tar.gz`
 1. Move the binary: `mv mev-boost /data`
-1. If you have no strong opinions about what kind of relay to use, just use Ultra Sound:
+1. Pick one or more relays to use.
+    1. If you have no strong opinions about this, just use Ultra Sound:
     * `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
-1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
+    1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
+1. Create an `mev-boost` user but do NOT create a home directory and this user should never log in, so they should not have a shell: `sudo useradd -M -s /bin/false mev-boost`
+1. Create a `systemd` unit file. `sudo nano /etc/systemd/system/mev-boost.service`, then paste in the one from the repo [`README`](https://github.com/flashbots/mev-boost#systemd-configuration), except:
+    1. Change the working directory to `WorkingDirectory=/data`
+    1. Change the path to the binary to `ExecStart=/data/mev-boost \`
+    1. Put your relay in.
+1. Start the service and enable it on boot:
+    1. `sudo systemctl daemon-reload`
+    1. `sudo systemctl start mev-boost.service`
+    1. `sudo systemctl status mev-boost.service`
+    1. `sudo systemctl enable mev-boost.service`
+1. Follow the logs for a bit to check it's working:
+    1. `journalctl -u mev-boost -f`
 
 ### Initial sync
 
@@ -326,11 +339,10 @@ journalctl -u nethermind -f
 
 ### MEV Boost
 
+Since `mev-boost` is running with `systemd`, you only need to follow the logs:
+
 ```
-/data/mev-boost \
-  -mainnet \
-  -relay-check \
-  -relays https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money
+journalctl -u mev-boost -f
 ```
 
 ### Beacon Node
