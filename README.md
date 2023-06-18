@@ -394,13 +394,13 @@ sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4
 
 Check the ports you're listening on. Ignoring the OS services such as `sshd`, you should have:
 
-|IP             |Port   |Process                                   |
-|---------------|-------|------------------------------------------|
-|`192.168.20.41`|`8545` |EL client, JSON RPC for general use|
-|`127.0.0.1`    |`8551` |EL client, JSON RPC for the CL client only|
-|`*`            |`9000` |CL client, for the EL client|
-|`127.0.0.1`    |`5052` |CL client, Beacon Node API for general use|
-|`127.0.0.1`    |`18550`|MEV Boost|
+|Port   |Process                                   |
+|-------|------------------------------------------|
+|`8545` |EL client, JSON RPC for general use|
+|`8551` |EL client, JSON RPC for the CL client only|
+|`9000` |CL client, for the EL client|
+|`5052` |CL client, Beacon Node API for general use|
+|`18550`|MEV Boost|
 
 ## Monitoring
 
