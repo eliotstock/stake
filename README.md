@@ -103,7 +103,7 @@ network:
 1. Update packages and get some stuff
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
-    1. `sudo apt install net-tools emacs git`
+    1. `sudo apt install net-tools ccze` (`ccze` is a log colouriser)
 1. Make sure that `unattended-updates` works for more than just security updates and includes non-Ubuntu PPAs.
     1. `sudo nano /etc/apt/apt.conf.d/50unattended-upgrades`
     1. Change the origins section to this:
@@ -337,7 +337,7 @@ Each time the server starts, run the below four processes inside `tmux`.
 Since `nethermind` is running with `systemd`, you only need to follow the logs:
 
 ```
-journalctl -u nethermind -f
+journalctl -u nethermind -f | ccze -A
 ```
 
 ### MEV Boost
@@ -345,7 +345,7 @@ journalctl -u nethermind -f
 Since `mev-boost` is running with `systemd`, you only need to follow the logs:
 
 ```
-journalctl -u mev-boost -f
+journalctl -u mev-boost -f | ccze -A
 ```
 
 ### Beacon Node
@@ -386,21 +386,6 @@ lighthouse \
 
 1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
 
-### Check ports
-
-```
-sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4
-```
-
-Check the ports you're listening on. Ignoring the OS services such as `sshd`, you should have:
-
-|Port   |Process                                   |
-|-------|------------------------------------------|
-|`8545` |EL client, JSON RPC for general use|
-|`8551` |EL client, JSON RPC for the CL client only|
-|`9000` |CL client, for the EL client|
-|`5052` |CL client, Beacon Node API for general use|
-|`18550`|MEV Boost|
 
 ## Monitoring
 
@@ -428,6 +413,17 @@ Check the ports you're listening on. Ignoring the OS services such as `sshd`, yo
     1. Google any errors.
     1. Upgrade to latest stable versions if necessary.
     1. Ask in the Discord server for the client about any errors if they persist after upgrade.
+1. Check the ports you're listening on:
+    1. `sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4`
+    1. Ignoring the OS services such as `sshd`, you should have:
+
+|Port   |Process                                   |
+|-------|------------------------------------------|
+|`8545` |EL client, JSON RPC for general use|
+|`8551` |EL client, JSON RPC for the CL client only|
+|`9000` |CL client, for the EL client|
+|`5052` |CL client, Beacon Node API for general use|
+|`18550`|MEV Boost|
 
 ## Updates
 
