@@ -244,6 +244,9 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. Change the working directory to `WorkingDirectory=/data`
     1. Change the path to the binary to `ExecStart=/data/mev-boost \`
     1. Put your relay in.
+1. Change ownership of the binary. This isn't strictly necessary but keeps things tidy.
+    1. `sudo chown mev-boost /data/mev-boost`
+    1. `sudo chgrp mev-boost /data/mev-boost`
 1. Start the service and enable it on boot:
     1. `sudo systemctl daemon-reload`
     1. `sudo systemctl start mev-boost.service`
@@ -391,11 +394,13 @@ sudo lsof -nP -iTCP -sTCP:LISTEN +c0 | grep IPv4
 
 Check the ports you're listening on. Ignoring the OS services such as `sshd`, you should have:
 
-1. `192.168.20.41:8545 (LISTEN)`: EL client, JSON RPC for general use
-1. `127.0.0.1:8551 (LISTEN)`: EL client, JSON RPC for the CL client only
-1. `*:9000 (LISTEN)`: CL client, for the EL client
-1. `127.0.0.1:5052 (LISTEN)`: CL client, Beacon Node API for general use
-1. `127.0.0.1:18550 (LISTEN)`: MEV Boost
+|IP             |Port   |Process                                   |
+|---------------|-------|------------------------------------------|
+|`192.168.20.41`|`8545` |EL client, JSON RPC for general use|
+|`127.0.0.1`    |`8551` |EL client, JSON RPC for the CL client only|
+|`*`            |`9000` |CL client, for the EL client|
+|`127.0.0.1`    |`5052` |CL client, Beacon Node API for general use|
+|`127.0.0.1`    |`18550`|MEV Boost|
 
 ## Monitoring
 
