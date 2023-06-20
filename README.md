@@ -6,6 +6,8 @@ These instructions are up to date wrt the following releases.
 * `lighthouse` 4.2.0
 * `mev-boost` 1.5.0
 
+You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation projects.
+
 ## Hardware and OS
 
 1. (Optional) Update the firmware in your router, factory reset, reconfigure.
@@ -284,12 +286,12 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     [Install]
     WantedBy=multi-user.target
     ```
-1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
-1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
-1. Omit `--debug-level warn` initially to see that all is well.
-1. Omit `--http-address` and `--http-allow-origin` if you don't need access to the Beacon Node API on your local network.
-1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DoS'ed.
-1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
+1. Don't forget to replace `<ADDRESS>` with the Ethereum address to which you want rewards paid.
+1. To open up the Beacon Node API locally:
+    1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.41:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
+    1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet or you'll get DoS'ed.
+1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.41`.
+1. You may wish to add `--debug-level warn` to each file later on to reduce log noise.
 1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `lighthouse` users:
     1. `sudo chown -R lighthouse-bn /data/lighthouse`
     1. `sudo chgrp -R lighthouse-bn /data/lighthouse`
@@ -424,6 +426,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 
 ## Troubleshooting issues
 
+1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
 1. Check disks have space: `df -h`
 1. Check CPU load average: `htop`. Should be 0.70 max, times the number of cores. So on an 8-core machine, a load average of 5.6 is the threshold at which the machine is getting overloaded.
 1. Check RAM available: `htop`, see `Mem`.
