@@ -289,22 +289,28 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 1. Don't forget to replace `<ADDRESS>` with the Ethereum address to which you want rewards paid.
 1. To open up the Beacon Node API locally:
     1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.41:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
-    1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet or you'll get DoS'ed.
+    1. You can now use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed.
 1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.41`.
-1. You may wish to add `--debug-level warn` to each file later on to reduce log noise.
+1. You may wish to add `--debug-level warn` to each file later on to reduce log noise. Start with the default of `info` though.
 1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `lighthouse` users:
-    1. `sudo chown -R lighthouse-bn /data/lighthouse`
-    1. `sudo chgrp -R lighthouse-bn /data/lighthouse`
-    1. `sudo chown -R lighthouse-vc /data/validator_keys`
-    1. `sudo chgrp -R lighthouse-vc /data/validator_keys`
+    ```
+    sudo chown -R lighthouse-bn /data/lighthouse/mainnet/beacon
+    sudo chgrp -R lighthouse-bn /data/lighthouse/mainnet/beacon
+    sudo chown -R lighthouse-vc /data/lighthouse/mainnet/validators
+    sudo chgrp -R lighthouse-vc /data/lighthouse/mainnet/validators
+    sudo chown -R lighthouse-vc /data/validator_keys
+    sudo chgrp -R lighthouse-vc /data/validator_keys
+    ```
 1. Start the service and enable it on boot:
-    1. `sudo systemctl daemon-reload`
-    1. `sudo systemctl start lighthouse-bn.service`
-    1. `sudo systemctl status lighthouse-bn.service`
-    1. `sudo systemctl enable lighthouse-bn.service`
-    1. `sudo systemctl start lighthouse-vc.service`
-    1. `sudo systemctl status lighthouse-vc.service`
-    1. `sudo systemctl enable lighthouse-vc.service`
+    ```
+    sudo systemctl daemon-reload
+    sudo systemctl start lighthouse-bn.service
+    sudo systemctl status lighthouse-bn.service
+    sudo systemctl enable lighthouse-bn.service
+    sudo systemctl start lighthouse-vc.service
+    sudo systemctl status lighthouse-vc.service
+    sudo systemctl enable lighthouse-vc.service
+    ```
 1. Follow the logs for a bit to check it's working:
     1. `journalctl -u lighthouse-bn -f`
     1. `journalctl -u lighthouse-vc -f`
@@ -338,6 +344,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 
 1. Generate a JWT token to be used by the clients:
     1. `openssl rand -hex 32 | tr -d "\n" > "/data/jwtsecret"`
+    1. This file needs to be readable by both the `nethermind` user and the `lighthouse-bn` user, so leave it as world readable.
 1. The first time you sync only, or if you've fallen far behind, use a checkpoint sync endpoint for the beacon node:
     1. `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --checkpoint-sync-url https://beaconstate.ethstaker.cc`
         1. Get the checkpoint sync URL from https://eth-clients.github.io/checkpoint-sync-endpoints/
