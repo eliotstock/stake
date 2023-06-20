@@ -228,7 +228,84 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 1. Make sure it runs: `./lighthouse --version`
 1. Move the binary out of your home dir:
     1. `sudo mv ./lighthouse /usr/bin`
-    1. `sudo chown root:root /usr/bin/lighthouse`
+1. Create two users but do NOT create home directories for them and they should never log in, so they should not have a shell:
+    1. `sudo useradd -M -s /bin/false lighthouse-bn`
+    1. `sudo useradd -M -s /bin/false lighthouse-vc`
+1. Create two `systemd` unit files as follows:
+    1. `sudo nano /etc/systemd/system/lighthouse-bn.service`:
+    ```
+    [Unit]
+    Description=Lighthouse Beacon Node
+    Wants=network-online.target
+    After=network-online.target
+
+    [Service]
+    Type=simple
+    User=lighthouse-bn
+    Group=lighthouse-bn
+    Restart=always
+    RestartSec=5
+    ExecStart=/usr/bin/lighthouse bn \
+    --network mainnet \
+    --datadir /data/lighthouse/mainnet \
+    --execution-endpoint http://localhost:8551 \
+    --execution-jwt /data/jwtsecret \
+    --http \
+    --http-address 192.168.20.41 \
+    --http-allow-origin "*" \
+    --builder http://localhost:18550 \
+    --graffiti eliotstock \
+    --suggested-fee-recipient <ADDRESS>
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+    1. `sudo nano /etc/systemd/system/lighthouse-vc.service`:
+    ```
+    [Unit]
+    Description=Lighthouse Validator Client
+    Wants=network-online.target
+    After=network-online.target
+
+    [Service]
+    User=lighthouse-vc
+    Group=lighthouse-vc
+    Type=simple
+    Restart=always
+    RestartSec=5
+    ExecStart=/usr/bin/lighthouse vc \
+    --network mainnet \
+    --datadir /data/lighthouse/mainnet \
+    --beacon-nodes http://192.168.20.41:5052 \
+    --builder-proposals \
+    --graffiti eliotstock \
+    --suggested-fee-recipient <ADDRESS>
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
+1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
+1. Omit `--debug-level warn` initially to see that all is well.
+1. Omit `--http-address` and `--http-allow-origin` if you don't need access to the Beacon Node API on your local network.
+1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DoS'ed.
+1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
+1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `lighthouse` users:
+    1. `sudo chown -R lighthouse-bn /data/lighthouse`
+    1. `sudo chgrp -R lighthouse-bn /data/lighthouse`
+    1. `sudo chown -R lighthouse-vc /data/validator_keys`
+    1. `sudo chgrp -R lighthouse-vc /data/validator_keys`
+1. Start the service and enable it on boot:
+    1. `sudo systemctl daemon-reload`
+    1. `sudo systemctl start lighthouse-bn.service`
+    1. `sudo systemctl status lighthouse-bn.service`
+    1. `sudo systemctl enable lighthouse-bn.service`
+    1. `sudo systemctl start lighthouse-vc.service`
+    1. `sudo systemctl status lighthouse-vc.service`
+    1. `sudo systemctl enable lighthouse-vc.service`
+1. Follow the logs for a bit to check it's working:
+    1. `journalctl -u lighthouse-bn -f`
+    1. `journalctl -u lighthouse-vc -f`
 
 ### MEV-Boost
 
@@ -320,9 +397,17 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. This transaction cost 50,634 gas, which was 0.00065 ETH at the time when I last did it. Having 0.001 ETH in your accouint to cover gas should be more than enough.
 1. Copy the public keys of the validator(s) you're funding from `/data/lighthouse/mainnet/validators/validator_definitions.yml` so you can paste them into beaconcha.in later (see Monitoring below)
 
-## On server restart
+## Monitoring
 
-Each time the server starts, run the below four processes inside `tmux`.
+### Mobile push alerts
+
+1. Create a user on https://beaconcha.in/.
+1. Got to https://beaconcha.in/user/notifications and add your validator.
+1. Get the mobile app.
+1. Sign in on the mobile app.
+1. Consider turning off the missed attestation notification after a week or so of smooth running. They're quite noisy and if you get too many notifications, you risk missing a more important one such as being offline.
+
+### Tailing the logs
 
 1. Run `tmux` first. This will keep the processes you start running after you disconnect, rather than using `systemd`. `tmux` refresher:
     1. Create four panes with `C-b "`
@@ -331,69 +416,11 @@ Each time the server starts, run the below four processes inside `tmux`.
     1. Kill a pane with `C-b C-d`
     1. Give the panes titles of their index and the command running in them with `set -g pane-border-format "#{pane_index} #{pane_current_command}"`
     1. Dettach from the session with `C-b d`
-
-### Execution client
-
-Since `nethermind` is running with `systemd`, you only need to follow the logs:
-
-```
-journalctl -u nethermind -f | ccze
-```
-
-### MEV Boost
-
-Since `mev-boost` is running with `systemd`, you only need to follow the logs:
-
-```
-journalctl -u mev-boost -f | ccze
-```
-
-### Beacon Node
-
-```
-lighthouse \
-  --network mainnet \
-  --datadir /data/lighthouse/mainnet \
-  bn \
-  --execution-endpoint http://localhost:8551 \
-  --execution-jwt /data/jwtsecret \
-  --http \
-  --http-address 192.168.20.41 \
-  --http-allow-origin "*" \
-  --builder http://localhost:18550 \
-  --graffiti eliotstock \
-  --suggested-fee-recipient <ADDRESS>
-```
-
-1. Note that `localhost` is correct here, even though the EL client used `192.168.20.41`.
-1. Omit `--debug-level warn` initially to see that all is well.
-1. Omit `--http-address` and `--http-allow-origin` if you don't need access to the Beacon Node API on your local network.
-1. You can now use the Beacon Node API on http://localhost:5052 but only on the local machine. Do not NAT this through to the internet oy you'll get DoS'ed.
-1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
-
-### Validator client
-
-```
-lighthouse \
-  --network mainnet \
-  --datadir /data/lighthouse/mainnet \
-  vc \
-  --beacon-nodes http://192.168.20.41:5052 \
-  --builder-proposals \
-  --graffiti eliotstock \
-  --suggested-fee-recipient <ADDRESS>
-```
-
-1. Omit ` --beacon-nodes http://192.168.20.41:5052` if you don't need access to the Beacon Node API on your local network.
-
-
-## Monitoring
-
-1. Create a user on https://beaconcha.in/.
-1. Got to https://beaconcha.in/user/notifications and add your validator.
-1. Get the mobile app.
-1. Sign in on the mobile app.
-1. Consider turning off the missed attestation notification after a week or so of smooth running. They're quite noisy and if you get too many notifications, you risk missing a more important one such as being offline.
+1. Tail the logs for each running `systemd` service:
+    1. `journalctl -u nethermind -f | ccze`
+    1. `journalctl -u mev-boost -f | ccze`
+    1. `journalctl -u lighthouse-bn -f`
+    1. `journalctl -u lighthouse-vc -f`
 
 ## Troubleshooting issues
 
