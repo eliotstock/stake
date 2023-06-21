@@ -301,7 +301,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     sudo chown -R lighthouse-vc /data/validator_keys
     sudo chgrp -R lighthouse-vc /data/validator_keys
     ```
-1. Start the service and enable it on boot:
+1. Start the services and enable them on boot:
     ```
     sudo systemctl daemon-reload
     sudo systemctl start lighthouse-bn.service
@@ -418,18 +418,19 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 
 ### Tailing the logs
 
-1. Run `tmux` first. This will keep the processes you start running after you disconnect, rather than using `systemd`. `tmux` refresher:
+1. Run `tmux` first, to get output from multiple services on the screen at once. `tmux` refresher:
     1. Create four panes with `C-b "`
-    1. Make them evenly sized with `C-b :` (to enter the command prompt) then `select-layout even-vertical`
+    1. Enter command prompt mode with `C-b :`, then:
+        1. Make the panes evenly sized: `select-layout even-vertical`
+        1. Give the panes titles of their index and the command running in them: `set -g pane-border-format "#{pane_index} #{pane_current_command}"`
     1. Move around the panes with `C-b [arrow keys]`
     1. Kill a pane with `C-b C-d`
-    1. Give the panes titles of their index and the command running in them with `set -g pane-border-format "#{pane_index} #{pane_current_command}"`
     1. Dettach from the session with `C-b d`
-1. Tail the logs for each running `systemd` service:
+1. Tail the logs for each running `systemd` service, one per pane (`ccze` is a logs colouriser):
     1. `journalctl -u nethermind -f | ccze`
     1. `journalctl -u mev-boost -f | ccze`
-    1. `journalctl -u lighthouse-bn -f`
-    1. `journalctl -u lighthouse-vc -f`
+    1. `journalctl -u lighthouse-bn -f | ccze`
+    1. `journalctl -u lighthouse-vc -f | ccze`
 
 ## Troubleshooting issues
 
