@@ -292,7 +292,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. You can now use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed.
 1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.41`.
 1. You may wish to add `--debug-level warn` to each file later on to reduce log noise. Start with the default of `info` though.
-1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `lighthouse` users:
+1. (Optional and only required if you already started running these as your own user): Change ownership of all data and logs to the `lighthouse` users:
     ```
     sudo chown -R lighthouse-bn /data/lighthouse/mainnet/beacon
     sudo chgrp -R lighthouse-bn /data/lighthouse/mainnet/beacon
