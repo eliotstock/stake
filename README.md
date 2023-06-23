@@ -8,11 +8,12 @@ These instructions are up to date wrt the following releases.
 
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation projects.
 
-## Hardware and OS
+## Hardware and OS install
 
-1. (Optional) Update the firmware in your router, factory reset, reconfigure.
+### Intel
+
 1. Grab an Intel NUC. Specs for mine:
-    1. i5-1135G7, 4 cores. Onlyt two slots (one M.2, one 2.5" SATA)
+    1. i5-1135G7, 4 cores. Only two slots (one M.2, one 2.5" SATA)
     1. 32 GB RAM
     1. Small drive (OS) is a Samsung SSD 980 250 GB M2
     1. Big drive (data) is a Crucial BX500 2TB 2.5" SSD. "On the box" it says "SATA 6GB/s - Up to 540MB/s Read - Up to 500MB/s Write". The speed of this drive will affect your performance and re-sync time more than anything else. I don't recommend this drive, which takes about 30 hours to sync. Wish I'd got an NVMe.
@@ -21,9 +22,7 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
     1. Power > Secondary power settings
     1. After power failure: Power on
     1. `F10` to save and exit
-1. (Optional) If re-installing, back up the following from the existing host.
-    1. `~/.ssh/authorized_keys`
-1. Install Ubuntu Server 22.04 LTS amd64
+1. Install Ubuntu Server 22.04 LTS
     1. F10 on boot to boot from USB for Intel NUC
     1. Minimal server installation
     1. Check ethernet interface(s) have a connection, use DHCP for now
@@ -33,6 +32,30 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
     1. Import SSH identity: yes, GitHub, don’t allow password auth over SSH
     1. Use the [redacted] SSH public key from GitHub
     1. No extra snaps
+
+### ARM
+
+1. Grab a Radxa Rock 5B board and parts. Specs for mine:
+    1. 16 GB RAM
+    1. Small drive (OS) is a 64 GB eMMC
+    1. Big drive (data) is a Crucial P3 Plus PCIe 4.0 NVMe M.2 2280. Do NOT get an NVMe drive with a massive heat sink on it, cause it won't fit. Clearance is limited between the bottom of the board and the case.
+    1. Get the Radxa case/heatsink. No need for a fan.
+    1. Get the eMMC to USB adapter for flashing the eMMC from the host machine.
+1. Flash the OS to the MMC.
+    1. Download the latest Ubuntu image from Radxa's (releases)[https://github.com/radxa-build/rock-5b/releases] repo. It'll be something like `rock-5b_ubuntu_jammy_cli_b36.img.xz`.
+    1. Note that this is NOT an installer image, it's the actual OS that you're going to run.
+    1. Make sure you can uncompress `xz` files: `sudo apt install xz-utils`
+    1. `unxz rock-5b_ubuntu_jammy_cli_b36.img.xz`
+    1. Plug the USB adapter in and find out what `sd*` device it got with `sudo dmesg | tail -20`. Mine was `sda`.
+    1. Write the image with `sudo dd if=./rock-5b_ubuntu_jammy_cli_b36.img of=/dev/sda bs=1M`
+    1. `sudo umount /dev/sda`
+    1. Remove the USB adapter, take the little eMMC module off it and stick it on the underside of the board.
+
+## OS setup
+
+1. (Optional) Update the firmware in your router, factory reset, and reconfigure, out of an abundance of caution.
+1. (Optional) If re-installing, back up the following from the existing host.
+    1. `~/.ssh/authorized_keys`
 1. Remember `Ctrl-Alt F1` through `F6` are there for switching to new terminals and multitasking.
 1. Partition and mount the big drive
     1. `lsblck` and confirm the big drive isn't mounted yet and is called `sda`
