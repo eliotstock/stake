@@ -28,10 +28,19 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
     1. Check ethernet interface(s) have a connection, use DHCP for now
     1. Use an entire disk, 250GB SSD, LVM group, no need to encrypt
     1. Take photo of file system summary screen during installation
-    1. Hostname: stake, username: [redacted]
+    1. Hostname: `stake`. Set a username.
     1. Import SSH identity: yes, GitHub, don’t allow password auth over SSH
-    1. Use the [redacted] SSH public key from GitHub
+    1. Use your SSH public key from GitHub
     1. No extra snaps
+1. Disable `cloud-init`
+    1. `sudo touch /etc/cloud/cloud-init.disabled`
+    1. `sudo reboot`
+    1. Make sure you can still log in as your new user.
+    1. `sudo dpkg-reconfigure cloud-init` and uncheck everything except `None`.
+    1. `sudo apt-get purge cloud-init`
+    1. `sudo rm -rf /etc/cloud/ && sudo rm -rf /var/lib/cloud/`
+    1. `sudo reboot`
+    1. Again, make sure you can still log in as your new user.
 
 ### ARM
 
@@ -50,66 +59,59 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
     1. Write the image with `sudo dd if=./rock-5b_ubuntu_jammy_cli_b36.img of=/dev/sda bs=1M`
     1. `sudo umount /dev/sda`
     1. Remove the USB adapter, take the little eMMC module off it and stick it on the underside of the board.
+    1. Connect the ethernet and USB cables and the board should power on. It seems OK to run it without the heatsink briefly. The LED should go green, then blue.
+    1. Watch the web interface of your router for the machine joining the LAN. Grab the IP address. Mine was `192.168.20.132`. You might instead be able to use `rock-5b.local` if your router creates it.
+    1. SSH in: `ssh rock@192.168.20.132`, password: `rock`
+    1. Check the OS version is what you expect: `lsb_release -a`
+    1. Create a new user: `sudo adduser [username]`. Set the password.
+    1. Add the user to the group that can be root: `sudo adduser [username] sudo`
+    1. Disconnect from SSH as `rock` and reconnect as your new user
+    1. Remove the existing `rock` user: `sudo deluser rock`
+    1. Change the hostname. Mine is `stake`.
+        1. `sudo nano /etc/hostname` and change
+        1. `sudo nano /etc/hosts` and change
 
 ## OS setup
 
 1. (Optional) Update the firmware in your router, factory reset, and reconfigure, out of an abundance of caution.
-1. (Optional) If re-installing, back up the following from the existing host.
+1. (Optional) If re-installing or migrating, copy over your SSH public keys from the old machine.
     1. `~/.ssh/authorized_keys`
+    1. Disconnect and reconnect SSH. You should no longer need a password.
 1. Remember `Ctrl-Alt F1` through `F6` are there for switching to new terminals and multitasking.
-1. Partition and mount the big drive
-    1. `lsblck` and confirm the big drive isn't mounted yet and is called `sda`
-    1. `sudo parted --list` and confirm it's not partitioned yet
-    1. `sudo fdisk /dev/sda`, `n` for new partition, `p` for primary, `1`, default first sector, default last sector, `w` to write.
-    1. `sudo parted /dev/sda`, `mklabel gpt`, `unit TB`, `mkpart`, `primary`, `ext4`, `0`, `2`, `print` and check output, `quit`.
-    1. Format the partition: `sudo mkfs -t ext4 /dev/sda`
-    1. Get the UUID for the drive from `sudo blkid`
-    1. Add something like this to the bottom of `/etc/fstab`: `/dev/disk/by-uuid/8723beb1-8bb4-4a34-8c01-c309361eedc5 /data ext4 defaults 0 2`
-    1. `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
-    1. Make the drive writable by your user with `sudo chown -R [USERNAME]:[USERNAME] /data`
-    1. `df -H` and confirm the drive is there and mostly free space
-    1. Reboot and make sure the drive mounts again
-1. Test the performance of the big drive
-    1. `sudo apt install fio`
-    1. `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=random_read_write.fio --bs=4k --iodepth=64 --size=4G --readwrite=randrw --rwmixread=75`
-    1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
-    1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
-1. Disable `cloud-init`
-    1. `sudo touch /etc/cloud/cloud-init.disabled`
-    1. `sudo reboot`
-    1. Make sure you can still log in as your new user.
-    1. `sudo dpkg-reconfigure cloud-init` and uncheck everything except `None`.
-    1. `sudo apt-get purge cloud-init`
-    1. `sudo rm -rf /etc/cloud/ && sudo rm -rf /var/lib/cloud/`
-    1. `sudo reboot`
-    1. Again, make sure you can still log in as your new user.
+1. Update packages and get some stuff
+    1. `sudo apt update`
+    1. `sudo apt upgrade` (make coffee)
+    1. `sudo apt install net-tools netplan.io ccze` (`ccze` is a log colouriser)
 1. Configure a static IP address.
-    1. Get the interface name from `ip link`. This might be `epn88s0`.
+    1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` (on the ARM board at least).
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
+    ```
+network:
+    version: 2
+    renderer: networkd
+    ethernets:
+        enP4p65s0:
+            dhcp4: no
+            addresses:
+                - 192.168.20.42/24
+            routes:
+                - to: default
+                  via: 192.168.10.1
+            nameservers:
+                addresses: [8.8.8.8, 1.1.1.1, 1.0.0.1]
+    ```
         1. A subnet mask of `/24` means only the last octet (8 bits) in the address changes for each device on the subnet.
         1. The DNS servers here are Google's and Cloudflare's.
         1. You might also consider using 9.9.9.9 (Quad9, does filtering of known malware sites).
         1. `.yaml` files use spaces for indentation (either 2 or 4), not tabs.
-    1. `sudo netplan apply`
-```
-network:
-  version: 2
-  renderer: networkd
-  ethernets:
-    eth0:
-      dhcp4: no
-      addresses:
-        - 192.168.20.41/24
-      gateway4: 192.168.20.1
-      nameservers:
-        addresses: [8.8.8.8, 1.1.1.1, 1.0.0.1]
-```
+    1. `sudo netplan apply`. You'll lose your SSH connection at this point.
+    1. Try to SSH in on the new IP. Then confirm it's changed with `ip a`.
 1. Change the ssh port from the default
     1. `sudo nano /etc/ssh/sshd_config`
     1. Uncomment the `Port` line. Pick a memorable port number/make a note of it.
-    1. Restart `sshd`: `sudo service sshd restart`
+    1. Reboot and reconnect, but this time use the `-p [port]` arg for `ssh`
+    1. TODO: Port has not changed. Can't connect on new port. Fix.
     1. Make sure there's an `.ssh` directory in your home directory for later: `mkdir -p ~/.ssh`
-    1. When connecting from a client, use the `-p [port]` arg for `ssh`
 1. Configure the firewall
     1. Confirm `ufw` is installed: `which ufw`
     1. `sudo ufw default deny incoming`
@@ -124,11 +126,6 @@ network:
     1. Check which ports are accessible with `sudo ufw status`
     1. Also block pings: `sudo nano /etc/ufw/before.rules`, find the line reading `A ufw-before-input -p icmp --icmp-type echo-request -j ACCEPT` and change `ACCEPT` to `DROP`
     1. `sudo ufw reload`
-1. If you chose the wrong hostname during the installer, change it now. `sudo nano /etc/hostname` and pick a cool hostname.
-1. Update packages and get some stuff
-    1. `sudo apt update`
-    1. `sudo apt upgrade` (make coffee)
-    1. `sudo apt install net-tools ccze` (`ccze` is a log colouriser)
 1. Make sure that `unattended-updates` works for more than just security updates and includes non-Ubuntu PPAs.
     1. `sudo nano /etc/apt/apt.conf.d/50unattended-upgrades`
     1. Change the origins section to this:
@@ -167,6 +164,23 @@ Unattended-Upgrade::Origins-Pattern {
         1. `bantime = -1`
     1. `sudo service fail2ban restart`
     1. Check for any banned IPs later with `sudo fail2ban-client status sshd`
+1. Partition and mount the big drive
+    1. `lsblck` and confirm the big drive isn't mounted yet and is called `sda`
+    1. `sudo parted --list` and confirm it's not partitioned yet
+    1. `sudo fdisk /dev/sda`, `n` for new partition, `p` for primary, `1`, default first sector, default last sector, `w` to write.
+    1. `sudo parted /dev/sda`, `mklabel gpt`, `unit TB`, `mkpart`, `primary`, `ext4`, `0`, `2`, `print` and check output, `quit`.
+    1. Format the partition: `sudo mkfs -t ext4 /dev/sda`
+    1. Get the UUID for the drive from `sudo blkid`
+    1. Add something like this to the bottom of `/etc/fstab`: `/dev/disk/by-uuid/8723beb1-8bb4-4a34-8c01-c309361eedc5 /data ext4 defaults 0 2`
+    1. `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
+    1. Make the drive writable by your user with `sudo chown -R [USERNAME]:[USERNAME] /data`
+    1. `df -H` and confirm the drive is there and mostly free space
+    1. Reboot and make sure the drive mounts again
+1. Test the performance of the big drive
+    1. `sudo apt install fio`
+    1. `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=random_read_write.fio --bs=4k --iodepth=64 --size=4G --readwrite=randrw --rwmixread=75`
+    1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
+    1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
 1. (Optional) Configure git user. Cache the personal access token from Github for one week.
     1. `git config --global user.email "foo@example.com"`
     1. `git config --global user.name "Your Name"`
@@ -178,7 +192,7 @@ Unattended-Upgrade::Origins-Pattern {
 1. Forward ports from the router to the host:
     1. Any execution client: 30303 (both TCP and UDP)
     1. Lighthouse (consensus client): 9000 (both TCP and UDP)
-    1. Only while travelling, SSH: [redacted] TCP
+    1. Only while travelling, SSH: [your port] TCP
 
 ## Clients
 
