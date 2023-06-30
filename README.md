@@ -8,7 +8,13 @@ These instructions are up to date wrt the following releases.
 
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation projects.
 
+Before you start:
+
+1. (Optional) Update the firmware in your router, factory reset, and reconfigure, out of an abundance of caution.
+
 ## Hardware and OS install
+
+First decide between Intel and ARM for your hardware. If you want a quiet, fanless machine, choose ARM.
 
 ### Intel
 
@@ -51,7 +57,7 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
     1. Get the Radxa case/heatsink. No need for a fan.
     1. Get the eMMC to USB adapter for flashing the eMMC from the host machine.
 1. Flash the OS to the MMC.
-    1. Download the latest Ubuntu image from Radxa's (releases)[https://github.com/radxa-build/rock-5b/releases] repo. It'll be something like `rock-5b_ubuntu_jammy_cli_b36.img.xz`.
+    1. Download the latest Ubuntu image from Radxa's [releases](https://github.com/radxa-build/rock-5b/releases) repo. It'll be something like `rock-5b_ubuntu_jammy_cli_b36.img.xz`.
     1. Note that this is NOT an installer image, it's the actual OS that you're going to run.
     1. Make sure you can uncompress `xz` files: `sudo apt install xz-utils`
     1. `unxz rock-5b_ubuntu_jammy_cli_b36.img.xz`
@@ -73,7 +79,6 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
 
 ## OS setup
 
-1. (Optional) Update the firmware in your router, factory reset, and reconfigure, out of an abundance of caution.
 1. (Optional) If re-installing or migrating, copy over your SSH public keys from the old machine.
     1. `~/.ssh/authorized_keys`
     1. Disconnect and reconnect SSH. You should no longer need a password.
@@ -83,22 +88,22 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
     1. `sudo apt upgrade` (make coffee)
     1. `sudo apt install net-tools netplan.io ccze` (`ccze` is a log colouriser)
 1. Configure a static IP address.
-    1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` (on the ARM board at least).
+    1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board.
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
     ```
-network:
-    version: 2
-    renderer: networkd
-    ethernets:
-        enP4p65s0:
-            dhcp4: no
-            addresses:
-                - 192.168.20.42/24
-            routes:
-                - to: default
-                  via: 192.168.10.1
-            nameservers:
-                addresses: [8.8.8.8, 1.1.1.1, 1.0.0.1]
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+          enP4p65s0:
+              dhcp4: no
+              addresses:
+                  - 192.168.20.42/24
+              routes:
+                  - to: default
+                    via: 192.168.10.1
+              nameservers:
+                  addresses: [8.8.8.8, 1.1.1.1, 1.0.0.1]
     ```
         1. A subnet mask of `/24` means only the last octet (8 bits) in the address changes for each device on the subnet.
         1. The DNS servers here are Google's and Cloudflare's.
