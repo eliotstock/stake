@@ -4,7 +4,7 @@ These instructions are up to date wrt the following releases.
 
 * `nethermind` 1.19
 * `lighthouse` 4.2.0
-* `mev-boost` 1.5.0
+* `mev-boost` 1.6.0
 
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation projects.
 
@@ -515,15 +515,16 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. `lighthouse`: binary
     1. `mev-boost`: binary
 1. To check which version you're currently running, run these. But be aware that in the case of a PPA, the running process may in fact still be the older version. You'll need to restart to get the new version to start executing.
-    1. `nethermind --version` 1.15.0
-    1. `lighthouse --version` 3.3.0
-    1. `/data/mev-boost --version` 1.5.0
+    1. `nethermind --version`
+    1. `lighthouse --version`
+    1. `/data/mev-boost --version`
 1. On each new release:
     1. Follow the instructions above again to get a new binary.
-    1. Overwrite the existing binary.
-    1. Wait till the end of an epoch.
+    1. Overwrite the existing binary as root.
+    1. `chown` and `chgrp` it back to the process owner as root.
     1. Stop only the updated processes.
-    1. Restart the process.
+    1. Restart the process with `sudo systemctl restart [service]`
+    1. Check the logs in the tmux session for a successful restart.
 
 ## Unstaking
 
