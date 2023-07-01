@@ -56,6 +56,10 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
     1. Big drive (data) is a Crucial P3 Plus PCIe 4.0 NVMe M.2 2280. Do NOT get an NVMe drive with a massive heat sink on it, cause it won't fit. Clearance is limited between the bottom of the board and the case.
     1. Get the Radxa case/heatsink. No need for a fan.
     1. Get the eMMC to USB adapter for flashing the eMMC from the host machine.
+1. There is no BIOS!
+    1. ARM boards are not PCs and do not have a BIOS. Don't bother connecting a keyboard and monitor if you don't plan to use one long term.
+    1. The board powers on again if it ever loses power, so, nothing to set up there.
+    1. The RTC is managed from some binaries - see below.
 1. Flash the OS to the MMC.
     1. Download the latest Ubuntu image from Radxa's [releases](https://github.com/radxa-build/rock-5b/releases) repo. It'll be something like `rock-5b_ubuntu_jammy_cli_b36.img.xz`.
     1. Note that this is NOT an installer image, it's the actual OS that you're going to run.
@@ -76,6 +80,13 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
     1. Change the hostname. Mine is `stake`.
         1. `sudo nano /etc/hostname` and change
         1. `sudo nano /etc/hosts` and change
+    1. Get network time working
+        1. `sudo nano /etc/systemd/timesyncd.conf`
+        1. Add `time.google.com`
+        1. `sudo timedatectl set-ntp true`
+        1. `systemctl restart systemd-timesyncd`
+        1. Check time with `timedatectl status` and check for `System clock synchronized: yes`
+        1. TODO: Not working. Fix.
 
 ## OS setup
 
@@ -86,7 +97,7 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
 1. Update packages and get some stuff
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
-    1. `sudo apt install net-tools netplan.io ccze` (`ccze` is a log colouriser)
+    1. `sudo apt install net-tools netplan.io ufw ccze` (`ccze` is a log colouriser)
 1. Configure a static IP address.
     1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board.
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
@@ -101,7 +112,7 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
                   - 192.168.20.42/24
               routes:
                   - to: default
-                    via: 192.168.10.1
+                    via: 192.168.20.1
               nameservers:
                   addresses: [8.8.8.8, 1.1.1.1, 1.0.0.1]
     ```
@@ -111,34 +122,47 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
         1. `.yaml` files use spaces for indentation (either 2 or 4), not tabs.
     1. `sudo netplan apply`. You'll lose your SSH connection at this point.
     1. Try to SSH in on the new IP. Then confirm it's changed with `ip a`.
-1. Change the ssh port from the default
+1. Tighten up ssh
     1. `sudo nano /etc/ssh/sshd_config`
-    1. Uncomment the `Port` line. Pick a memorable port number/make a note of it.
-    1. Reboot and reconnect, but this time use the `-p [port]` arg for `ssh`
-    1. TODO: Port has not changed. Can't connect on new port. Fix.
+    1. Change the ssh port from the default. Uncomment the `Port` line. Pick a memorable port number/make a note of it.
+    1. Only allow ssh'ing in using a key from now on. Set `PasswordAuthentication no`.
+    1. Also change `systemd` which may be the one listening on port 22 because it's "socket activated".
+    1. `sudo mkdir /etc/systemd/system/ssh.socket.d`
+    1. `sudo nano /etc/systemd/system/ssh.socket.d/port.conf` and put:
+    ```
+    [Socket]
+    ListenStream=
+    ListenStream=[Your port]
+    ```
+    1. Reboot (or just `sudo service sshd restart && sudo systemctl daemon-reload`, but you'll lose your connection anyway) and reconnect, but this time use the `-p [port]` arg for `ssh`.
     1. Make sure there's an `.ssh` directory in your home directory for later: `mkdir -p ~/.ssh`
 1. Configure the firewall
     1. Confirm `ufw` is installed: `which ufw`
-    1. `sudo ufw default deny incoming`
-    1. `sudo ufw default allow outgoing`
-    1. `sudo ufw allow [your ssh port]/tcp comment 'ssh'`
-    1. `sudo ufw allow 30303 comment 'execution client'`
-    1. `sudo ufw allow 9000 comment 'consensus client'`
-    1. `sudo ufw allow 8545/tcp comment 'execution client health'`
-    1. `sudo ufw allow 8551/tcp comment 'execution client health'`
-    1. `sudo ufw enable`
+    1. Run these:
+    ```
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    sudo ufw allow [your ssh port]/tcp comment 'ssh'
+    sudo ufw allow out from any to any port 123 comment 'ntp'
+    sudo ufw allow 30303 comment 'execution client'
+    sudo ufw allow 9000 comment 'consensus client'
+    sudo ufw allow 8545/tcp comment 'execution client health'
+    sudo ufw allow 8551/tcp comment 'execution client health'
+    sudo ufw enable
+    ```
     1. Note that `http` and `https` are absent above.
     1. Check which ports are accessible with `sudo ufw status`
     1. Also block pings: `sudo nano /etc/ufw/before.rules`, find the line reading `A ufw-before-input -p icmp --icmp-type echo-request -j ACCEPT` and change `ACCEPT` to `DROP`
     1. `sudo ufw reload`
 1. Make sure that `unattended-updates` works for more than just security updates and includes non-Ubuntu PPAs.
+    1. On ARM only, `sudo touch /etc/apt/apt.conf.d/50unattended-upgrades` first because this won't exist.
     1. `sudo nano /etc/apt/apt.conf.d/50unattended-upgrades`
-    1. Change the origins section to this:
-```
-Unattended-Upgrade::Origins-Pattern {
-      "o=*";
-}
-```
+    1. Add this anywhere:
+    ```
+    Unattended-Upgrade::Origins-Pattern {
+        "o=*";
+    }
+    ```
 1. (Optional and only required if you didn't restore SSH keys from GitHub during installation) Set up ssh keys for all client machines from which you'll want to connect.
     1. If re-installing, restore the `~/.ssh/authorized_keys` file you backed up earlier, using `scp`.
         1. Try connecting using `ssh` first
@@ -153,9 +177,6 @@ Unattended-Upgrade::Origins-Pattern {
         1. Copy the public key to the server: `scp -P [port] ~/.ssh/id_rsa.pub [username]@[server IP]:/home/[username]/.ssh/authorized_keys`
         1. Verify the file is there on the server.
         1. Verify you can ssh in to the server and you're not prompted for a password. Use the alias you created earlier.
-1. Only allow ssh'ing in using a key from now on. `sudo nano /etc/ssh/sshd_config` and set `PasswordAuthentication no`.
-    1. `sudo service sshd restart`
-    1. Check you can `ssh` in from the client without entering a password.
 1. Ban any IP address that has multiple failed login attempts using `fail2ban`
     1. `sudo apt install fail2ban`
     1. `sudo cp /etc/fail2ban/fail2ban.conf /etc/fail2ban/fail2ban.local`
