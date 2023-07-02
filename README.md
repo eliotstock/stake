@@ -97,7 +97,7 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
 1. Update packages and get some stuff
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
-    1. `sudo apt install net-tools netplan.io ufw ccze` (`ccze` is a log colouriser)
+    1. `sudo apt install net-tools netplan.io ufw fail2ban fio ccze`
 1. Configure a static IP address.
     1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board.
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
@@ -178,32 +178,52 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
         1. Verify the file is there on the server.
         1. Verify you can ssh in to the server and you're not prompted for a password. Use the alias you created earlier.
 1. Ban any IP address that has multiple failed login attempts using `fail2ban`
-    1. `sudo apt install fail2ban`
+    1. In order for `fail2ban` to work, the `sshd service needs to be running, not just the "socket activated" version.
+        1. `sudo systemctl enable ssh.service` (Note the `ssh` here, NOT `sshd`)
+        1. `sudo systemctl start ssh.service`
     1. `sudo cp /etc/fail2ban/fail2ban.conf /etc/fail2ban/fail2ban.local`
     1. `sudo nano /etc/fail2ban/fail2ban.local` and add:
-        1. `[sshd]`
-        1. `enabled = true`
-        1. `port = [port]`
-        1. `filter = sshd`
-        1. `logpath = /var/log/auth.log`
-        1. `maxretry = 3`
-        1. `bantime = -1`
-    1. `sudo service fail2ban restart`
-    1. Check for any banned IPs later with `sudo fail2ban-client status sshd`
+    ```
+    [sshd]
+    enabled = true
+    port = [port]
+    filter = sshd
+    logpath = /var/log/auth.log
+    maxretry = 3
+    bantime = -1
+    ```
+    1. `sudo systemctl enable fail2ban.service`
+    1. `sudo systemctl start fail2ban.service`
+    1. TODO: Fails on ARM because `/var/log/auth.log` doesn't exist.
+    1. Make a note to come back periodically and check for any banned IPs with `sudo fail2ban-client status sshd`
 1. Partition and mount the big drive
-    1. `lsblck` and confirm the big drive isn't mounted yet and is called `sda`
+    1. `lsblk` and confirm the big drive isn't mounted yet. It might be called `sda` or `nvme0n1`.
     1. `sudo parted --list` and confirm it's not partitioned yet
-    1. `sudo fdisk /dev/sda`, `n` for new partition, `p` for primary, `1`, default first sector, default last sector, `w` to write.
-    1. `sudo parted /dev/sda`, `mklabel gpt`, `unit TB`, `mkpart`, `primary`, `ext4`, `0`, `2`, `print` and check output, `quit`.
-    1. Format the partition: `sudo mkfs -t ext4 /dev/sda`
+    1. `sudo fdisk /dev/nvme0n1`
+        1. `n` for new partition
+        1. `p` for primary
+        1. default partition number
+        1. default first sector
+        1. default last sector
+        1. `p` to print (check)
+        1. If your disk is larger than 2TB, don't worry about `fdisk` only supporting sizes up to 2TB. We'll deal with that next.
+        1. `w` to write.
+    1. `sudo parted /dev/nvme0n1`
+        1. `mklabel gpt`
+        1. `Yes`
+        1. `mkpart primary 0GB 4001GB`
+        1. `quit`.
+    1. Format the partition: `sudo mkfs -t ext4 /dev/nvme0n1`
     1. Get the UUID for the drive from `sudo blkid`
-    1. Add something like this to the bottom of `/etc/fstab`: `/dev/disk/by-uuid/8723beb1-8bb4-4a34-8c01-c309361eedc5 /data ext4 defaults 0 2`
-    1. `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
+    1. Append to `/etc/fstab`:
+        1. `sudo nano /etc/fstab`
+        1. Add `/dev/disk/by-uuid/YOUR_DISK_UUID /data ext4 defaults 0 2`
+    1. `mkdir /data`, `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
     1. Make the drive writable by your user with `sudo chown -R [USERNAME]:[USERNAME] /data`
     1. `df -H` and confirm the drive is there and mostly free space
     1. Reboot and make sure the drive mounts again
 1. Test the performance of the big drive
-    1. `sudo apt install fio`
+    1. `cd /data`
     1. `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=random_read_write.fio --bs=4k --iodepth=64 --size=4G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
     1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
