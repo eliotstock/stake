@@ -16,6 +16,8 @@ Before you start:
 
 First decide between Intel and ARM for your hardware. If you want a quiet, fanless machine, choose ARM.
 
+Only buy the big drive after reading this awesome ["hall of blame"](https://gist.github.com/yorickdowne/f3a3e79a573bf35767cd002cc977b038) Gist.
+
 ### Intel
 
 1. Grab an Intel NUC. Specs for mine:
@@ -54,6 +56,13 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
     1. 16 GB RAM
     1. Small drive (OS) is a 64 GB eMMC
     1. Big drive (data) is a Crucial P3 Plus PCIe 4.0 NVMe M.2 2280. Do NOT get an NVMe drive with a massive heat sink on it, cause it won't fit. Clearance is limited between the bottom of the board and the case.
+        1. This drive claims "Up to 4,800MB/s Read - Up to 4,100MB/s Write" on the box.
+        1. But hewre's the `fio` output (see below for the command line used)
+        ```
+        READ: bw=316MiB/s (331MB/s), 316MiB/s-316MiB/s (331MB/s-331MB/s), io=3070MiB (3219MB), run=9722-9722msec
+        WRITE: bw=106MiB/s (111MB/s), 106MiB/s-106MiB/s (111MB/s-111MB/s), io=1026MiB (1076MB), run=9722-9722msec
+
+        ```
     1. Get the Radxa case/heatsink. No need for a fan.
     1. Get the eMMC to USB adapter for flashing the eMMC from the host machine.
 1. There is no BIOS!
@@ -224,7 +233,7 @@ First decide between Intel and ARM for your hardware. If you want a quiet, fanle
     1. Reboot and make sure the drive mounts again
 1. Test the performance of the big drive
     1. `cd /data`
-    1. `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=random_read_write.fio --bs=4k --iodepth=64 --size=4G --readwrite=randrw --rwmixread=75`
+    1. `sudo fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=test --bs=4k --iodepth=64 --size=150G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
     1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
 1. (Optional) Configure git user. Cache the personal access token from Github for one week.
