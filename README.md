@@ -11,6 +11,10 @@ You'll need to be comfortable with Linux. The goal here is to gain an understand
 Before you start:
 
 1. (Optional) Update the firmware in your router, factory reset, and reconfigure, out of an abundance of caution.
+1. Figure out some stuff up front:
+    1. Static IP address: replace `192.168.20.132` below with this.
+    1. Username on the host: replace `[username]` below with this.
+    1. SSH port to open up: replace `60001` below with this.
 
 ## Hardware and OS install
 
@@ -99,11 +103,11 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 
 ## OS setup
 
+1. Remember `Ctrl-Alt F1` through `F6` are there for switching to new terminals and multitasking.
 1. (Optional) If re-installing or migrating, copy over your SSH public keys from the old machine.
     1. `~/.ssh/authorized_keys`
     1. Disconnect and reconnect SSH. You should no longer need a password.
-1. Remember `Ctrl-Alt F1` through `F6` are there for switching to new terminals and multitasking.
-1. Update packages and get some stuff
+1. Update packages and get some stuff we're going to need below.
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
     1. `sudo apt install net-tools netplan.io ufw fail2ban fio ccze`
@@ -133,7 +137,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Try to SSH in on the new IP. Then confirm it's changed with `ip a`.
 1. Tighten up ssh
     1. `sudo nano /etc/ssh/sshd_config`
-    1. Change the ssh port from the default. Uncomment the `Port` line. Pick a memorable port number/make a note of it.
+    1. Change the ssh port from the default. Uncomment the `Port` line. Pick a memorable port number and make a note of it.
     1. Only allow ssh'ing in using a key from now on. Set `PasswordAuthentication no`.
     1. Also change `systemd` which may be the one listening on port 22 because it's "socket activated".
     1. `sudo mkdir /etc/systemd/system/ssh.socket.d`
@@ -141,9 +145,9 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     ```
     [Socket]
     ListenStream=
-    ListenStream=[Your port]
+    ListenStream=[60001]
     ```
-    1. Reboot (or just `sudo service sshd restart && sudo systemctl daemon-reload`, but you'll lose your connection anyway) and reconnect, but this time use the `-p [port]` arg for `ssh`.
+    1. Reboot (or just `sudo service sshd restart && sudo systemctl daemon-reload`, but you'll lose your connection anyway) and reconnect, but this time use the `-p 60001` arg for `ssh`.
     1. Make sure there's an `.ssh` directory in your home directory for later: `mkdir -p ~/.ssh`
 1. Configure the firewall
     1. Confirm `ufw` is installed: `which ufw`
@@ -151,7 +155,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     ```
     sudo ufw default deny incoming
     sudo ufw default allow outgoing
-    sudo ufw allow [your ssh port]/tcp comment 'ssh'
+    sudo ufw allow 60001/tcp comment 'ssh'
     sudo ufw allow out from any to any port 123 comment 'ntp'
     sudo ufw allow 30303 comment 'execution client'
     sudo ufw allow 9000 comment 'consensus client'
@@ -178,12 +182,12 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
         1. You'll get an error about the host key changing, including a command to run to forget the old host key. Run it.
         1. Now do the `scp` copy: `scp -P 1035 ./authorized_keys [username]@[ip]:/home/[username]/.ssh/authorized_keys`
     1. Otherwise:
-        1. You might like to set an alias in `~/.bashrc` such as `alias <random-name>="ssh -p [port] [username]@[server IP]"`
-        1. Similarly for scp: `alias <random-name>="scp -P [port] $1 [username]@[server IP]:/home/[username]"`
+        1. You might like to set an alias in `~/.bashrc` such as `alias <random-name>="ssh -p 60001 [username]@[server IP]"`
+        1. Similarly for scp: `alias <random-name>="scp -P 60001 $1 [username]@[server IP]:/home/[username]"`
         1. `ssh-keygen -t rsa -b 4096 -C "[client nickname]"`
         1. No passphrase.
         1. Accept the default path. You'll get both `~/.ssh/id_rsa.pub` (public key) and `~/.ssh/id_rsa` (private key).
-        1. Copy the public key to the server: `scp -P [port] ~/.ssh/id_rsa.pub [username]@[server IP]:/home/[username]/.ssh/authorized_keys`
+        1. Copy the public key to the server: `scp -P 60001 ~/.ssh/id_rsa.pub [username]@[server IP]:/home/[username]/.ssh/authorized_keys`
         1. Verify the file is there on the server.
         1. Verify you can ssh in to the server and you're not prompted for a password. Use the alias you created earlier.
 1. Ban any IP address that has multiple failed login attempts using `fail2ban`
@@ -195,7 +199,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     ```
     [sshd]
     enabled = true
-    port = [port]
+    port = 60001
     filter = sshd
     logpath = /var/log/auth.log
     maxretry = 3
@@ -217,18 +221,19 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
         1. `p` to print (check)
         1. If your disk is larger than 2TB, don't worry about `fdisk` only supporting sizes up to 2TB. We'll deal with that next.
         1. `w` to write.
-    1. `sudo parted /dev/nvme0n1`
+    1. (Optional) if your disk is biger than 2TB, give it a GPT label
+        1. `sudo parted /dev/nvme0n1`
         1. `mklabel gpt`
         1. `Yes`
-        1. `mkpart primary 0GB 4001GB`
+        1. `mkpart primary 0GB 4001GB` (for a 4TB drive)
         1. `quit`.
     1. Format the partition: `sudo mkfs -t ext4 /dev/nvme0n1`
     1. Get the UUID for the drive from `sudo blkid`
     1. Append to `/etc/fstab`:
         1. `sudo nano /etc/fstab`
-        1. Add `/dev/disk/by-uuid/YOUR_DISK_UUID /data ext4 defaults 0 2`
-    1. `mkdir /data`, `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
-    1. Make the drive writable by your user with `sudo chown -R [USERNAME]:[USERNAME] /data`
+        1. Add `/dev/disk/by-uuid/YOUR_DISK_UUID /data ext4 defaults    0   2`
+    1. `sudo mkdir /data`, `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
+    1. Make the drive writable by your user with `sudo chown -R [username]:[username] /data`
     1. `df -H` and confirm the drive is there and mostly free space
     1. Reboot and make sure the drive mounts again
 1. Test the performance of the big drive
@@ -236,18 +241,18 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=test --bs=4k --iodepth=64 --size=150G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
     1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
-1. (Optional) Configure git user. Cache the personal access token from Github for one week.
+<!-- 1. (Optional) Configure git user. Cache the personal access token from Github for one week.
     1. `git config --global user.email "foo@example.com"`
     1. `git config --global user.name "Your Name"`
     1. `git config --global credential.helper cache`
     1. `git config --global credential.helper 'cache --timeout=604800'`
     1. Assuming your Github user auth is configured like mine, copy your personal access token to the clipboard and `ssh` into the host
     1. Pull any repos you might need: `git clone [repo's https url] [repo dir]`
-    1. From inside each repo working directory: `git config pull.rebase false`
+    1. From inside each repo working directory: `git config pull.rebase false` -->
 1. Forward ports from the router to the host:
     1. Any execution client: 30303 (both TCP and UDP)
     1. Lighthouse (consensus client): 9000 (both TCP and UDP)
-    1. Only while travelling, SSH: [your port] TCP
+    1. Only while travelling, SSH: 60001 TCP
 
 ## Clients
 
@@ -591,7 +596,7 @@ To stop staking, which is different to withdrawal:
 
 ### You travel
 
-* Open up your chosen SSH port on your NATs before you go.
+* Open up your chosen SSH port (eg. 60001) on your NATs before you go.
 * Make sure the laptop you take has the SSH keys for the staking machine - test connecting from outside, using a mobile internet connection.
 * Disable the SSH port NAT when you get back.
 
