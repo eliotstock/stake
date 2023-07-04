@@ -12,8 +12,9 @@ Before you start:
 
 1. (Optional) Update the firmware in your router, factory reset, and reconfigure, out of an abundance of caution.
 1. Figure out some stuff up front:
-    1. Static IP address: replace `192.168.20.132` below with this.
+    1. Hostname: replace `node01` below with this.
     1. Username on the host: replace `[username]` below with this.
+    1. Static IP address: replace `192.168.20.51` below with this.
     1. SSH port to open up: replace `60001` below with this.
 
 ## Hardware and OS install
@@ -40,7 +41,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Check ethernet interface(s) have a connection, use DHCP for now
     1. Use an entire disk, 250GB SSD, LVM group, no need to encrypt
     1. Take photo of file system summary screen during installation
-    1. Hostname: `stake`. Set a username.
+    1. Hostname: `node01`. Set a username.
     1. Import SSH identity: yes, GitHub, don’t allow password auth over SSH
     1. Use your SSH public key from GitHub
     1. No extra snaps
@@ -83,14 +84,14 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo umount /dev/sda`
     1. Remove the USB adapter, take the little eMMC module off it and stick it on the underside of the board.
     1. Connect the ethernet and USB cables and the board should power on. It seems OK to run it without the heatsink briefly. The LED should go green, then blue.
-    1. Watch the web interface of your router for the machine joining the LAN. Grab the IP address. Mine was `192.168.20.132`. You might instead be able to use `rock-5b.local` if your router creates it.
-    1. SSH in: `ssh rock@192.168.20.132`, password: `rock`
+    1. Watch the web interface of your router for the machine joining the LAN. Grab the IP address. Mine was `192.168.20.51`. You might instead be able to use `rock-5b.local` if your router creates it.
+    1. SSH in: `ssh rock@192.168.20.51`, password: `rock`
     1. Check the OS version is what you expect: `lsb_release -a`
     1. Create a new user: `sudo adduser [username]`. Set the password.
     1. Add the user to the group that can be root: `sudo adduser [username] sudo`
     1. Disconnect from SSH as `rock` and reconnect as your new user
     1. Remove the existing `rock` user: `sudo deluser rock`
-    1. Change the hostname. Mine is `stake`.
+    1. Change the hostname. Mine is `node01`.
         1. `sudo nano /etc/hostname` and change
         1. `sudo nano /etc/hosts` and change
     1. Get network time working
@@ -110,9 +111,10 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 1. Update packages and get some stuff we're going to need below.
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
-    1. `sudo apt install net-tools netplan.io ufw fail2ban fio ccze smartmontools`
+    1. `sudo apt install net-tools netplan.io ufw fail2ban fio ccze smartmontools speedtest-cli`
 1. Configure a static IP address.
     1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board.
+    1. Figure out whether you're using `netplan` or `NetworkManager`. If both are installed you might have `/etc/netplan/something.yaml` simply delegating to `NetworkManager` with `renderer: NetworkManager`. The below assumes you want to use `netplan`.
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
     ```
     network:
@@ -122,22 +124,24 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
           enP4p65s0:
               dhcp4: no
               addresses:
-                  - 192.168.20.42/24
+                  - 192.168.20.51/24
               routes:
                   - to: default
                     via: 192.168.20.1
               nameservers:
                   addresses: [8.8.8.8, 1.1.1.1, 1.0.0.1]
     ```
-        1. A subnet mask of `/24` means only the last octet (8 bits) in the address changes for each device on the subnet.
-        1. The DNS servers here are Google's and Cloudflare's.
-        1. You might also consider using 9.9.9.9 (Quad9, does filtering of known malware sites).
-        1. `.yaml` files use spaces for indentation (either 2 or 4), not tabs.
+    1. `.yaml` files use spaces for indentation (either 2 or 4), not tabs.
+    1. A subnet mask of `/24` means only the last octet (8 bits) in the address changes for each device on the subnet.
+    1. The DNS servers here are Google's and Cloudflare's.
+    1. You might also consider using 9.9.9.9 (Quad9, does filtering of known malware sites).
+    1. `sudo chmod 600 /etc/netplan/01-config.yaml`
+    1. `sudo netplan try` to check your config file.
     1. `sudo netplan apply`. You'll lose your SSH connection at this point.
     1. Try to SSH in on the new IP. Then confirm it's changed with `ip a`.
 1. Tighten up ssh
     1. `sudo nano /etc/ssh/sshd_config`
-    1. Change the ssh port from the default. Uncomment the `Port` line. Pick a memorable port number and make a note of it.
+    1. Change the ssh port from the default. Uncomment the `Port` line. Pick a memorable port number, eg. 60001, and make a note of it.
     1. Only allow ssh'ing in using a key from now on. Set `PasswordAuthentication no`.
     1. Also change `systemd` which may be the one listening on port 22 because it's "socket activated".
     1. `sudo mkdir /etc/systemd/system/ssh.socket.d`
@@ -292,7 +296,7 @@ WantedBy=default.target
 DOTNET_BUNDLE_EXTRACT_BASE_DIR = /data/nethermind
 NETHERMIND_JSONRPCCONFIG_ENABLED = true
 NETHERMIND_JSONRPCCONFIG_JWTSECRETFILE = /data/jwtsecret
-NETHERMIND_JSONRPCCONFIG_HOST = 192.168.20.41
+NETHERMIND_JSONRPCCONFIG_HOST = 192.168.20.51
 NETHERMIND_HEALTHCHECKSCONFIG_ENABLED = true
 NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 # Not working. See bug: https://github.com/NethermindEth/nethermind/issues/5738.
@@ -313,8 +317,8 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     1. `journalctl -u nethermind -f`
 1. The (commented) config above will prune the database once the remaining space on the drive falls below 300 GB. Othwerwise pruning will be manual and you'll have to watch your disk space.
 1. Once up and running, check health with:
-    1. `curl http://192.168.20.41:8545/health`
-    1. Or if you have a GUI and browser: http://192.168.20.41:8545/healthchecks-ui
+    1. `curl http://192.168.20.51:8545/health`
+    1. Or if you have a GUI and browser: http://192.168.20.51:8545/healthchecks-ui
 1. Something to note on the executables.
     1. `/usr/bin/nethermind` is just a shell script that runs either:
         * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
@@ -353,7 +357,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     --execution-endpoint http://localhost:8551 \
     --execution-jwt /data/jwtsecret \
     --http \
-    --http-address 192.168.20.41 \
+    --http-address 192.168.20.51 \
     --http-allow-origin "*" \
     --builder http://localhost:18550 \
     --graffiti eliotstock \
@@ -378,7 +382,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     ExecStart=/usr/bin/lighthouse vc \
     --network mainnet \
     --datadir /data/lighthouse/mainnet \
-    --beacon-nodes http://192.168.20.41:5052 \
+    --beacon-nodes http://192.168.20.51:5052 \
     --builder-proposals \
     --graffiti eliotstock \
     --suggested-fee-recipient <ADDRESS>
@@ -388,9 +392,9 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
     ```
 1. Don't forget to replace `<ADDRESS>` with the Ethereum address to which you want rewards paid.
 1. To open up the Beacon Node API locally:
-    1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.41:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
+    1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.51:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
     1. You can now use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed.
-1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.41`.
+1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.51`.
 1. You may wish to add `--debug-level warn` to each file later on to reduce log noise. Start with the default of `info` though.
 1. (Optional and only required if you already started running these as your own user): Change ownership of all data and logs to the `lighthouse` users:
     ```
@@ -539,11 +543,11 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 1. Check CPU load average: `htop`. Should be 0.70 max, times the number of cores. So on an 8-core machine, a load average of 5.6 is the threshold at which the machine is getting overloaded.
 1. Check RAM available: `htop`, see `Mem`.
 1. Check internet connectivity and speed:
-    1. `sudo apt  install speedtest-cli`
+    1. `sudo apt install speedtest-cli`
     1. `speedtest --secure`
     1. My results: ~250 Mbit/s down, ~90 Mbit/s up.
     1. Minumum according to some Googling: 10 Mbit/s either way.
-    1. If your router is a bit rubbish, like mine, you might want to preemptively reboot it once a month ratehr than have it go down in the middle of the night.
+    1. If your router is a bit rubbish, like mine, you might want to preemptively reboot it once a month rather than have it go down in the middle of the night.
 1. Check logs:
     1. Execution client: No log levels in logs. Just `grep rror /data/nethermind/logs/mainnet.logs.txt`
     1. Beacon Node: `grep -e WARN -e ERRO -e CRIT /data/lighthouse/mainnet/beacon/logs/beacon.log`
@@ -627,14 +631,14 @@ To stop staking, which is different to withdrawal:
 
 * `sudo ufw allow 5052/tcp comment 'beacon node api'`
 * `sudo ufw reload`
-* Get the local IP of your host with `ip a` (eg. `http://192.168.20.41:5052/`)
+* Get the local IP of your host with `ip a` (eg. `http://192.168.20.51:5052/`)
 * You won't be able to use the Swagger UI version hosted by the Ethereum Foundation repo at https://ethereum.github.io/beacon-APIs, because it uses `https`. When the browser makes requests to your beacon node, they'll be over straight `http` and you'll get a `Mixed content` error on the browser console. You could serve the API over `https` but it's easier not to.
 * Instead just run Swagger UI locally.
     * `git clone git@github.com:ethereum/beacon-APIs.git`
     * `cd beacon-APIs`
     * `python3 -m http.server 8080`
     * Open http://localhost:8080 and set the version to `dev` (release number version will fail because we haven't built the `releases` directory).
-    * Set the `server_url` to `http://192.168.20.41:5052/`
+    * Set the `server_url` to `http://192.168.20.51:5052/`
     * Test some API endpoints.
 
 ## Sedge
