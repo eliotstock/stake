@@ -110,7 +110,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 1. Update packages and get some stuff we're going to need below.
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
-    1. `sudo apt install net-tools netplan.io ufw fail2ban fio ccze`
+    1. `sudo apt install net-tools netplan.io ufw fail2ban fio ccze smartmontools`
 1. Configure a static IP address.
     1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board.
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
@@ -236,6 +236,9 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Make the drive writable by your user with `sudo chown -R [username]:[username] /data`
     1. `df -H` and confirm the drive is there and mostly free space
     1. Reboot and make sure the drive mounts again
+1. Check for firmware updates for the drive
+    1. `sudo smartctl -a /dev/nvme0n1` and get the current firmware version.
+    1. Do some Googling and figure out if there's an update you need.
 1. Test the performance of the big drive
     1. `cd /data`
     1. `sudo fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=test --bs=4k --iodepth=64 --size=150G --readwrite=randrw --rwmixread=75`
