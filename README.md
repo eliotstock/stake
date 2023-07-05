@@ -73,6 +73,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 1. There is no BIOS!
     1. ARM boards are not PCs and do not have a BIOS. Don't bother connecting a keyboard and monitor if you don't plan to use one long term.
     1. The board powers on again if it ever loses power, so, nothing to set up there.
+    1. To shut it down and have it stay off, use `sudo poweroff`. If you use `sudo shutdown -r now` it will just reboot.
     1. The RTC is managed from some binaries - see below.
 1. Flash the OS to the MMC.
     1. Download the latest Ubuntu image from Radxa's [releases](https://github.com/radxa-build/rock-5b/releases) repo. It'll be something like `rock-5b_ubuntu_jammy_cli_b36.img.xz`.
