@@ -237,6 +237,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Append to `/etc/fstab`:
         1. `sudo nano /etc/fstab`
         1. Add `/dev/disk/by-uuid/YOUR_DISK_UUID /data ext4 defaults    0   2`
+            1. The `0` here means the `dump` backup program should skip the disk and the `2` is the order in which `fsck` will check disks.
     1. `sudo mkdir /data`, `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
     1. Make the drive writable by your user with `sudo chown -R [username]:[username] /data`
     1. `df -H` and confirm the drive is there and mostly free space
