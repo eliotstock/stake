@@ -3,7 +3,7 @@
 These instructions are up to date wrt the following releases.
 
 * `nethermind` 1.19
-* `lighthouse` 4.2.0
+* `lighthouse` 4.3.0
 * `mev-boost` 1.6.0
 
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation projects.
@@ -568,7 +568,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 |`5052` |CL client, Beacon Node API for general use|
 |`18550`|MEV Boost|
 
-## Updates
+## Client upgrades
 
 1. Subscribe to the repos to get an email on a new release. For each of these, drop down 'Watch', go to 'Custom' and check 'Releases'.
     1. https://github.com/nethermindeth/nethermind/releases
@@ -589,8 +589,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 1. On each new release:
     1. Follow the instructions above again to get a new binary.
     1. Overwrite the existing binary as root.
-    1. `chown` and `chgrp` it back to the process owner as root.
-    1. Stop only the updated processes.
+    1. If it's executable as anyone, there's no need to `chown` and `chgrp` it back to the process owner as root.
     1. Restart the process with `sudo systemctl restart [service]`
     1. Check the logs in the tmux session for a successful restart.
 
