@@ -677,7 +677,7 @@ If this seems like a ton of work, you can forget most of the above and just inst
 
 Rough notes on setting up a separate machine for Juno and maybe Pathfinder.
 
-1. `sudo apt install git gcc make`
+1. `sudo apt install git gcc make tmux`
 1. Don't use the Ubuntu APK for `golang` - it's not recent enough.
     1. `sudo apt remove golang-1.18 golang-1.18-doc golang-1.18-go golang-1.18-src golang-doc golang-go golang-src`
     1. Grab the tarball URL from https://go.dev/dl/
@@ -687,5 +687,6 @@ Rough notes on setting up a separate machine for Juno and maybe Pathfinder.
 1. `cd && git clone https://github.com/NethermindEth/juno.git`
 1. `make juno`
 1. Get your local Ethereum node running, sync'ed and with the RPC interface up. Take a note if the IP and port for RPC, eg. `http://192.168.20.41:8545`.
-1. Run it with `./build/juno --db-path /data/juno --eth-node http://192.168.20.41:8545`
-
+1. Open a `tmux` session so you can continue execution after you disconnect ssh.
+1. Run Juno with `./build/juno --db-path /data/juno --eth-node http://192.168.20.41:8545`
+    1. Note that verifying blocks against L1 it's quite there yet, depsite the docs. Actually run without `--eth-node` for now.
