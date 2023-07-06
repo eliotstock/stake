@@ -270,6 +270,18 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 1. Add the PPA and install the package. See Nethermind's [docs](https://docs.nethermind.io/nethermind/installing-nethermind/download-sources#ubuntu).
 1. Create a directory for the Rocks DBs and logs: `mkdir /data/nethermind`
 1. Create a `nethermind` user but do NOT create a home directory and this user should never log in, so they should not have a shell: `sudo useradd -M -s /bin/false nethermind`
+<!-- 1. Make a copy of the default mainnet config file to allow for any changes:
+    1. `sudo /usr/share/nethermind/configs/mainnet.cfg /data/nethermind/local.cfg`
+    1. `sudo chown nethermind:nethermind /data/nethermind/local.cfg`
+    1. Edit the file and add under `JsonRpc`:
+    ```
+    "EnabledModules": [
+        ["Eth", "Subscribe", "Trace", "TxPool", "Web3", "Personal", "Proof", "Net", "Parity", "Health", "Rpc"]
+    ],
+    "EngineEnabledModules": [
+        ["Net", "Eth", "Subscribe", "Web3"]
+    ]
+    ``` -->
 1. Create a `systemd` unit file as follows `sudo nano /etc/systemd/system/nethermind.service`:
 ```
 [Unit]
@@ -298,7 +310,12 @@ WantedBy=default.target
 DOTNET_BUNDLE_EXTRACT_BASE_DIR = /data/nethermind
 NETHERMIND_JSONRPCCONFIG_ENABLED = true
 NETHERMIND_JSONRPCCONFIG_JWTSECRETFILE = /data/jwtsecret
-NETHERMIND_JSONRPCCONFIG_HOST = 192.168.20.51
+NETHERMIND_JSONRPCCONFIG_HOST = 0.0.0.0
+NETHERMIND_JSONRPCCONFIG_PORT = 8545
+NETHERMIND_JSONRPCCONFIG_ENGINEHOST = 0.0.0.0
+NETHERMIND_JSONRPCCONFIG_ENGINEPORT = 8551
+NETHERMIND_JSONRPCCONFIG_ENABLEDMODULES = [Eth, Subscribe, Trace, TxPool, Web3, Personal, Proof, Net, Parity, Health, Rpc]
+NETHERMIND_JSONRPCCONFIG_ENGINEENABLEDMODULES = [Net, Eth, Subscribe, Web3]
 NETHERMIND_HEALTHCHECKSCONFIG_ENABLED = true
 NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 # Not working. See bug: https://github.com/NethermindEth/nethermind/issues/5738.
@@ -321,6 +338,11 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 1. Once up and running, check health with:
     1. `curl http://192.168.20.51:8545/health`
     1. Or if you have a GUI and browser: http://192.168.20.51:8545/healthchecks-ui
+1. To test the websockets subscriptions using `wscat`:
+    1. `npm install -g wscat`
+    1. `wscat -c ws://192.168.20.51:8545`
+    1. `{"method":"eth_subscribe","params":["newHeads"],"id":1,"jsonrpc":"2.0"}`
+    1. You should get some JSON back every block.
 1. Something to note on the executables.
     1. `/usr/bin/nethermind` is just a shell script that runs either:
         * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
@@ -650,3 +672,20 @@ If this seems like a ton of work, you can forget most of the above and just inst
 1. To start the `sedge` containers once installed: `sudo docker compose -f docker-compose-scripts/docker-compose.yml up -d execution consensus`
 1. To stop them: `sudo docker compose -f docker-compose-scripts/docker-compose.yml down`
 1. Running as root was necessary on my host, but can be avoided (Google it).
+
+## Starknet
+
+Rough notes on setting up a separate machine for Juno and maybe Pathfinder.
+
+1. `sudo apt install git gcc make`
+1. Don't use the Ubuntu APK for `golang` - it's not recent enough.
+    1. `sudo apt remove golang-1.18 golang-1.18-doc golang-1.18-go golang-1.18-src golang-doc golang-go golang-src`
+    1. Grab the tarball URL from https://go.dev/dl/
+    1. `wget https://go.dev/dl/go1.20.5.linux-amd64.tar.gz` (for example)
+    1. Follow instructions at https://go.dev/doc/install
+1. You'll also need a Rust toolchain. See https://www.rust-lang.org/tools/install.
+1. `cd && git clone https://github.com/NethermindEth/juno.git`
+1. `make juno`
+1. Get your local Ethereum node running, sync'ed and with the RPC interface up. Take a note if the IP and port for RPC, eg. `http://192.168.20.41:8545`.
+1. Run it with `./build/juno --db-path /data/juno --eth-node http://192.168.20.41:8545`
+
