@@ -677,7 +677,7 @@ If this seems like a ton of work, you can forget most of the above and just inst
 
 Rough notes on setting up a separate machine for Juno and maybe Pathfinder.
 
-1. `sudo apt install git gcc make tmux`
+1. `sudo apt install git gcc make tmux lsof`
 1. Don't use the Ubuntu APK for `golang` - it's not recent enough.
     1. `sudo apt remove golang-1.18 golang-1.18-doc golang-1.18-go golang-1.18-src golang-doc golang-go golang-src`
     1. Grab the tarball URL from https://go.dev/dl/
@@ -698,10 +698,25 @@ Rough notes on setting up a separate machine for Juno and maybe Pathfinder.
     1. Note that verifying blocks against L1 isn't quite there yet, depsite the docs. When it is we'll run with `--eth-node http://192.168.20.41:8545`.
 1. Your RPC node is now available (even without waiting for sync to complete) on, eg. `http://192.168.20.53:6060`.
 1. Note that there are no log files yet. All logging simply goes to the console.
+1. Configure the firewall
+    1. Confirm `ufw` is installed: `which ufw`
+    1. Run these:
+    ```
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    sudo ufw allow 60003/tcp comment 'ssh'
+    sudo ufw allow out from any to any port 123 comment 'ntp'
+    sudo ufw allow 6060 comment 'juno http'
+    sudo ufw allow 6061 comment 'juno ws'
+    sudo ufw enable
+    ```
+    1. Note that `http` and `https` are absent above.
+    1. Check which ports are accessible with `sudo ufw status`
+    1. `sudo ufw reload`
 1. Upgrades
     1. `cd ~/juno`
     1. `git pull origin main`
     1. `tmux attach`
     1. `Ctrl-C` to kill the process
     1. Run the same command line as before the upgrade.
-1. TODO: Firewall with port 6060 TCP open only.
+
