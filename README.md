@@ -684,10 +684,24 @@ Rough notes on setting up a separate machine for Juno and maybe Pathfinder.
     1. `wget https://go.dev/dl/go1.20.5.linux-amd64.tar.gz` (for example)
     1. Follow instructions at https://go.dev/doc/install
 1. You'll also need a Rust toolchain. See https://www.rust-lang.org/tools/install.
-1. `cd && git clone https://github.com/NethermindEth/juno.git`
+1. `cd && git clone https://github.com/NethermindEth/juno.git && cd juno`
 1. `make juno`
 1. Grab the latest snapshot URL from https://github.com/NethermindEth/juno, `wget` it onto the node and extract it to `/data/juno/mainnet`.
 1. Get your local Ethereum node running, sync'ed and with the RPC interface up. Take a note if the IP and port for RPC, eg. `http://192.168.20.41:8545`.
 1. Open a `tmux` session so you can continue execution after you disconnect ssh.
-1. Run Juno with `./build/juno --db-path /data/juno/mainnet`
-    1. Note that verifying blocks against L1 it's quite there yet, depsite the docs. When it is we'll run with `--eth-node http://192.168.20.41:8545`.
+1. Run Juno with:
+```
+./build/juno \
+  --db-path /data/juno/mainnet \
+  --http-port 6060
+```
+    1. Note that verifying blocks against L1 isn't quite there yet, depsite the docs. When it is we'll run with `--eth-node http://192.168.20.41:8545`.
+1. Your RPC node is now available (even without waiting for sync to complete) on, eg. `http://192.168.20.53:6060`.
+1. Note that there are no log files yet. All logging simply goes to the console.
+1. Upgrades
+    1. `cd ~/juno`
+    1. `git pull origin main`
+    1. `tmux attach`
+    1. `Ctrl-C` to kill the process
+    1. Run the same command line as before the upgrade.
+1. TODO: Firewall with port 6060 TCP open only.
