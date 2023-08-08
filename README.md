@@ -675,7 +675,7 @@ If this seems like a ton of work, you can forget most of the above and just inst
 
 ## Starknet
 
-Rough notes on setting up a separate machine for Juno and maybe Pathfinder.
+Rough notes on setting up a separate machine for Juno.
 
 1. `sudo apt install git gcc make tmux lsof`
 1. Don't use the Ubuntu APK for `golang` - it's not recent enough.
