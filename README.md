@@ -716,6 +716,7 @@ Rough notes on setting up a separate machine for Juno.
 1. Upgrades
     1. `cd ~/juno`
     1. `git pull origin main` (or a release tag)
+    1. `make juno`
     1. `tmux attach`
     1. `Ctrl-C` to kill the process
     1. Run the same command line as before the upgrade.
