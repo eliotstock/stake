@@ -687,15 +687,16 @@ Rough notes on setting up a separate machine for Juno.
 1. `cd && git clone https://github.com/NethermindEth/juno.git && cd juno`
 1. `make juno`
 1. Grab the latest snapshot URL from https://github.com/NethermindEth/juno, `wget` it onto the node and extract it to `/data/juno/mainnet`.
-<!-- 1. Get your local Ethereum node running, sync'ed and with the RPC interface up. Take a note of the IP and port for RPC, eg. `http://192.168.20.41:8545`. -->
+1. Get your local Ethereum node running, sync'ed and with the RPC interface up. Take a note of the IP and port for RPC, eg. `ws://192.168.20.41:8545`.
 1. Open a `tmux` session so you can continue execution after you disconnect ssh.
 1. Run Juno with:
     ```
     ./build/juno \
     --db-path /data/juno/mainnet \
     --http-port 6060
+    --eth-node ws://192.168.20.41:8545
+    --log-level DEBUG
     ```
-1. Note that verifying blocks against L1 isn't quite there yet, depsite the docs. When it is we'll run with `--eth-node http://192.168.20.41:8545`.
 1. Your RPC node is now available (even without waiting for sync to complete) on, eg. `http://192.168.20.53:6060`.
 1. Note that there are no log files yet. All logging simply goes to the console.
 1. Configure the firewall
