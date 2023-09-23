@@ -2,7 +2,7 @@
 
 These instructions are up to date wrt the following releases.
 
-* `nethermind` 1.19
+* `nethermind` 1.20.4
 * `lighthouse` 4.3.0
 * `mev-boost` 1.6.0
 
