@@ -276,7 +276,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Edit the file and add under `JsonRpc`:
     ```
     "EnabledModules": [
-        ["Eth", "Subscribe", "Trace", "TxPool", "Web3", "Personal", "Proof", "Net", "Parity", "Health", "Rpc"]
+        ["Eth", "Subscribe", "Trace", "TxPool", "Web3", "Personal", "Proof", "Net", "Parity", "Health", "Rpc", "Admin"]
     ],
     "EngineEnabledModules": [
         ["Net", "Eth", "Subscribe", "Web3"]
@@ -314,7 +314,7 @@ NETHERMIND_JSONRPCCONFIG_HOST = 0.0.0.0
 NETHERMIND_JSONRPCCONFIG_PORT = 8545
 NETHERMIND_JSONRPCCONFIG_ENGINEHOST = 0.0.0.0
 NETHERMIND_JSONRPCCONFIG_ENGINEPORT = 8551
-NETHERMIND_JSONRPCCONFIG_ENABLEDMODULES = [Eth, Subscribe, Trace, TxPool, Web3, Personal, Proof, Net, Parity, Health, Rpc]
+NETHERMIND_JSONRPCCONFIG_ENABLEDMODULES = [Eth, Subscribe, Trace, TxPool, Web3, Personal, Proof, Net, Parity, Health, Rpc, Admin]
 NETHERMIND_JSONRPCCONFIG_ENGINEENABLEDMODULES = [Net, Eth, Subscribe, Web3]
 NETHERMIND_HEALTHCHECKSCONFIG_ENABLED = true
 NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
@@ -322,6 +322,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 # NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTRIGGER = VolumeFreeSpace
 # NETHERMIND_PRUNINGCONFIG_MODE = Full
 # NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTHRESHOLDMB 307200
+NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 ```
 1. Make `nethermind` own the file: `sudo chown nethermind /data/nethermind/.env`
 1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `nethermind` user:
@@ -564,6 +565,8 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 
 1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
 1. Check disks have space: `df -h`
+    1. To prune Nethermind, call the `admin_prune` RPC endpoint, like [this](https://docs.nethermind.io/interacting/json-rpc-ns/admin#admin_prune).
+    1. Expect this to take a day or two. Definitely don't do this if you're about to be in the sync committee.
 1. Check CPU load average: `htop`. Should be 0.70 max, times the number of cores. So on an 8-core machine, a load average of 5.6 is the threshold at which the machine is getting overloaded.
 1. Check RAM available: `htop`, see `Mem`.
 1. Check internet connectivity and speed:
