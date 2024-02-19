@@ -700,6 +700,19 @@ Rough notes on setting up a separate machine for Juno.
     --eth-node ws://192.168.20.41:8545
     --log-level DEBUG
     ```
+1. If you can't build juno, you can fall back on running it as a container:
+    ```
+    docker run -d \
+    --name juno \
+    -p 6060:6060 \
+    -v /data/juno/mainnet:/var/lib/juno \
+    nethermind/juno \
+    --http \
+    --http-port 6060 \
+    --http-host 0.0.0.0 \
+    --db-path /var/lib/juno \
+    --eth-node ws://192.168.20.41:8545
+    ```
 1. Your RPC node is now available (even without waiting for sync to complete) on, eg. `http://192.168.20.53:6060`.
 1. Note that there are no log files yet. All logging simply goes to the console.
 1. Configure the firewall
