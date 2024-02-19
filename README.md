@@ -684,7 +684,7 @@ Rough notes on setting up a separate machine for Juno.
 1. Don't use the Ubuntu APK for `golang` - it's not recent enough.
     1. `sudo apt remove golang-1.18 golang-1.18-doc golang-1.18-go golang-1.18-src golang-doc golang-go golang-src`
     1. Grab the tarball URL from https://go.dev/dl/
-    1. `wget https://go.dev/dl/go1.20.5.linux-amd64.tar.gz` (for example)
+    1. `wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz` (for example)
     1. Follow instructions at https://go.dev/doc/install
 1. You'll also need a Rust toolchain. See https://www.rust-lang.org/tools/install.
 1. `cd && git clone https://github.com/NethermindEth/juno.git && cd juno`
@@ -720,6 +720,10 @@ Rough notes on setting up a separate machine for Juno.
 1. Upgrades
     1. `cd ~/juno`
     1. `git pull origin main` (or a release tag)
+    1. `rustup update`
+    1. Check https://go.dev/dl/ for the latest golang version.
+    1. `wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz` (for example)
+    1. Follow instructions at https://go.dev/doc/install
     1. `make juno`
     1. `tmux attach`
     1. `Ctrl-C` to kill the process
