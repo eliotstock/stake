@@ -2,9 +2,9 @@
 
 These instructions are up to date wrt the following releases.
 
-* `nethermind` 1.20.4
-* `lighthouse` 4.4.1
-* `mev-boost` 1.6.0
+* `nethermind` 1.25.4
+* `lighthouse` 5.1.1
+* `mev-boost` 1.7.0
 
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation projects.
 
@@ -267,7 +267,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 
 ### Nethermind (execution layer client)
 
-1. Add the PPA and install the package. See Nethermind's [docs](https://docs.nethermind.io/nethermind/installing-nethermind/download-sources#ubuntu).
+1. Add the PPA and install the package. See Nethermind's [docs](https://docs.nethermind.io/get-started/installing-nethermind#package-managers).
 1. Create a directory for the Rocks DBs and logs: `mkdir /data/nethermind`
 1. Create a `nethermind` user but do NOT create a home directory and this user should never log in, so they should not have a shell: `sudo useradd -M -s /bin/false nethermind`
 <!-- 1. Make a copy of the default mainnet config file to allow for any changes:
