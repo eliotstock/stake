@@ -6,7 +6,7 @@ These instructions are up to date wrt the following releases.
 * `lighthouse` 5.1.1
 * `mev-boost` 1.7.0
 
-You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation projects.
+You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation stuff.
 
 Before you start:
 
@@ -19,7 +19,7 @@ Before you start:
 
 ## Hardware and OS install
 
-First decide between Intel and ARM for your hardware. If you want a quiet, fanless machine, choose ARM.
+First decide between Intel and ARM for your hardware. If you want a quiet, fanless machine, choose ARM, but beware the issues I had below with the Radxa Rock 5B.
 
 Only buy the big drive after reading this awesome ["hall of blame"](https://gist.github.com/yorickdowne/f3a3e79a573bf35767cd002cc977b038) Gist.
 
@@ -27,7 +27,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 
 1. Grab an Intel NUC. Specs for mine:
     1. i5-1135G7, 4 cores. Only two slots (one M.2, one 2.5" SATA)
-    1. 32 GB RAM
+    1. 32 GB RAM (but 16GB is fine)
     1. Small drive (OS) is a Samsung SSD 980 250 GB M2
     1. Big drive (data) is a Crucial BX500 2TB 2.5" SSD. "On the box" it says "SATA 6GB/s - Up to 540MB/s Read - Up to 500MB/s Write". The speed of this drive will affect your performance and re-sync time more than anything else. I don't recommend this drive, which takes about 30 hours to sync. Wish I'd got an NVMe.
 1. Set the machine to restart after a power failure.
@@ -37,19 +37,21 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `F10` to save and exit
 1. Install Ubuntu Server 22.04 LTS
     1. F10 on boot to boot from USB for Intel NUC
-    1. Minimal server installation
+    1. `Ubuntu Server (minimized)`
     1. Check ethernet interface(s) have a connection, use DHCP for now
     1. Use an entire disk, 250GB SSD, LVM group, no need to encrypt
     1. Take photo of file system summary screen during installation
     1. Hostname: `node01`. Set a username.
+    1. Install OpenSSH server.
     1. Import SSH identity: yes, GitHub, don’t allow password auth over SSH
     1. Use your SSH public key from GitHub
     1. No extra snaps
+    1. Finish installation and reboot
 1. Disable `cloud-init`
     1. `sudo touch /etc/cloud/cloud-init.disabled`
     1. `sudo reboot`
     1. Make sure you can still log in as your new user.
-    1. `sudo dpkg-reconfigure cloud-init` and uncheck everything except `None`.
+    1. `sudo dpkg-reconfigure cloud-init` and choose`none of the above`.
     1. `sudo apt-get purge cloud-init`
     1. `sudo rm -rf /etc/cloud/ && sudo rm -rf /var/lib/cloud/`
     1. `sudo reboot`
@@ -105,16 +107,17 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 
 ## OS setup
 
-1. Remember `Ctrl-Alt F1` through `F6` are there for switching to new terminals and multitasking.
-1. (Optional) If re-installing or migrating, copy over your SSH public keys from the old machine.
-    1. `~/.ssh/authorized_keys`
-    1. Disconnect and reconnect SSH. You should no longer need a password.
+1. Switch to SSH-ing in from another machine now, for ease of copy/pasting stuff from this guide.
+    1. Grab the IP address from the router.
+    1. `ssh [username]@[ip]`
+    1. If you restored your GitHub SSH key during installation and you have it on your local machine, you should be straight in.
 1. Update packages and get some stuff we're going to need below.
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
-    1. `sudo apt install net-tools netplan.io ufw fail2ban fio ccze smartmontools speedtest-cli`
+    1. Agree to restarting all the suggested services.
+    1. `sudo apt install nano net-tools netplan.io ufw fail2ban parted fio ccze smartmontools speedtest-cli`
 1. Configure a static IP address.
-    1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board.
+    1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board, `enp88s0` on the Intel NUC.
     1. Figure out whether you're using `netplan` or `NetworkManager`. If both are installed you might have `/etc/netplan/something.yaml` simply delegating to `NetworkManager` with `renderer: NetworkManager`. The below assumes you want to use `netplan`.
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
     ```
@@ -122,7 +125,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
       version: 2
       renderer: networkd
       ethernets:
-          enP4p65s0:
+          enp88s0:
               dhcp4: no
               addresses:
                   - 192.168.20.51/24
@@ -152,8 +155,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     ListenStream=
     ListenStream=[60001]
     ```
-    1. Reboot (or just `sudo service sshd restart && sudo systemctl daemon-reload`, but you'll lose your connection anyway) and reconnect, but this time use the `-p 60001` arg for `ssh`.
-    1. Make sure there's an `.ssh` directory in your home directory for later: `mkdir -p ~/.ssh`
+    1. Reboot and reconnect, but this time use the `-p 60001` arg for `ssh`.
 1. Configure the firewall
     1. Confirm `ufw` is installed: `which ufw`
     1. Run these:
@@ -177,9 +179,10 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo nano /etc/apt/apt.conf.d/50unattended-upgrades`
     1. Add this anywhere:
     ```
+    // Allow non-Ubuntu PPAs
     Unattended-Upgrade::Origins-Pattern {
         "o=*";
-    }
+    };
     ```
 1. (Optional and only required if you didn't restore SSH keys from GitHub during installation) Set up ssh keys for all client machines from which you'll want to connect.
     1. If re-installing, restore the `~/.ssh/authorized_keys` file you backed up earlier, using `scp`.
@@ -196,7 +199,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
         1. Verify the file is there on the server.
         1. Verify you can ssh in to the server and you're not prompted for a password. Use the alias you created earlier.
 1. Ban any IP address that has multiple failed login attempts using `fail2ban`
-    1. In order for `fail2ban` to work, the `sshd service needs to be running, not just the "socket activated" version.
+    1. In order for `fail2ban` to work, the `sshd` service needs to be running, not just the "socket activated" version.
         1. `sudo systemctl enable ssh.service` (Note the `ssh` here, NOT `sshd`)
         1. `sudo systemctl start ssh.service`
     1. `sudo cp /etc/fail2ban/fail2ban.conf /etc/fail2ban/fail2ban.local`
@@ -249,7 +252,6 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `cd /data`
     1. `sudo fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=test --bs=4k --iodepth=64 --size=150G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
-    1. If you can't remember what SDD (non-NVMe) you bought, `sudo hdparm -I /dev/sda` (where `sda` may be something else) will give you the details.
 <!-- 1. (Optional) Configure git user. Cache the personal access token from Github for one week.
     1. `git config --global user.email "foo@example.com"`
     1. `git config --global user.name "Your Name"`
