@@ -115,7 +115,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
     1. Agree to restarting all the suggested services.
-    1. `sudo apt install nano net-tools netplan.io ufw fail2ban parted fio ccze smartmontools speedtest-cli`
+    1. `sudo apt install nano unzip net-tools netplan.io ufw fail2ban parted fio ccze smartmontools speedtest-cli`
 1. Configure a static IP address.
     1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board, `enp88s0` on the Intel NUC.
     1. Figure out whether you're using `netplan` or `NetworkManager`. If both are installed you might have `/etc/netplan/something.yaml` simply delegating to `NetworkManager` with `renderer: NetworkManager`. The below assumes you want to use `netplan`.
@@ -252,6 +252,35 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `cd /data`
     1. `sudo fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=test --bs=4k --iodepth=64 --size=150G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
+    1. Here's what I got with a `Crucial P3 Plus NVMe M.2`. The pertinent bit is _137k IOPS for read and 45.2k IOPS for write_
+```
+test: (g=0): rw=randrw, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=64
+fio-3.28
+Starting 1 process
+test: Laying out IO file (1 file / 153600MiB)
+Jobs: 1 (f=1): [m(1)][100.0%][r=535MiB/s,w=177MiB/s][r=137k,w=45.2k IOPS][eta 00m:00s]
+test: (groupid=0, jobs=1): err= 0: pid=1538: Wed Apr 24 11:28:31 2024
+  read: IOPS=55.5k, BW=217MiB/s (227MB/s)(113GiB/531276msec)
+   bw (  KiB/s): min=148360, max=631704, per=99.93%, avg=221899.05, stdev=27043.69, samples=1062
+   iops        : min=37090, max=157926, avg=55474.71, stdev=6760.91, samples=1062
+  write: IOPS=18.5k, BW=72.3MiB/s (75.8MB/s)(37.5GiB/531276msec); 0 zone resets
+   bw (  KiB/s): min=50416, max=207504, per=99.93%, avg=73954.19, stdev=9002.97, samples=1062
+   iops        : min=12604, max=51876, avg=18488.48, stdev=2250.73, samples=1062
+  cpu          : usr=5.60%, sys=17.07%, ctx=21177496, majf=2, minf=6
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=0.1%, >=64=100.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.1%, >=64=0.0%
+     issued rwts: total=29492326,9829274,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=64
+
+Run status group 0 (all jobs):
+   READ: bw=217MiB/s (227MB/s), 217MiB/s-217MiB/s (227MB/s-227MB/s), io=113GiB (121GB), run=531276-531276msec
+  WRITE: bw=72.3MiB/s (75.8MB/s), 72.3MiB/s-72.3MiB/s (75.8MB/s-75.8MB/s), io=37.5GiB (40.3GB), run=531276-531276msec
+
+Disk stats (read/write):
+    dm-1: ios=29446674/9827674, merge=0/0, ticks=32826092/970688, in_queue=33796780, util=99.92%, aggrios=29492341/9842875, aggrmerge=0/259, aggrticks=32827649/1050440, aggrin_queue=33878550, aggrutil=99.91%
+  nvme0n1: ios=29492341/9842875, merge=0/259, ticks=32827649/1050440, in_queue=33878550, util=99.91%
+```
 <!-- 1. (Optional) Configure git user. Cache the personal access token from Github for one week.
     1. `git config --global user.email "foo@example.com"`
     1. `git config --global user.name "Your Name"`
@@ -354,7 +383,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 
 ### Lighthouse (consensus layer client)
 
-1. Go to https://github.com/sigp/lighthouse/releases and find the latest (non-portable) release, with suffix `x86_64-unknown-linux-gnu`. Download, extract and delete  it on the host.
+1. Go to https://github.com/sigp/lighthouse/releases and find the latest (non-portable) release, with suffix `x86_64-unknown-linux-gnu`. Download, extract and delete it on the host.
     1. `wget https://github.com/sigp/lighthouse/releases/download/v4.0.1/lighthouse-v4.0.1-x86_64-unknown-linux-gnu.tar.gz`
     1. `tar -xvf lighthouse-*.tar.gz`
     1. `rm lighthouse-*.tar.gz`
@@ -388,7 +417,8 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     --http-allow-origin "*" \
     --builder http://localhost:18550 \
     --graffiti eliotstock \
-    --suggested-fee-recipient <ADDRESS>
+    --suggested-fee-recipient <ADDRESS> \
+    --checkpoint-sync-url https://mainnet.checkpoint.sigp.io/
 
     [Install]
     WantedBy=multi-user.target
@@ -423,12 +453,12 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. You can now use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed.
 1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.51`.
 1. You may wish to add `--debug-level warn` to each file later on to reduce log noise. Start with the default of `info` though.
-1. (Optional and only required if you already started running these as your own user): Change ownership of all data and logs to the `lighthouse` users:
+1. Create data directories and change ownership of all data and logs to the `lighthouse` users:
     ```
-    sudo chown -R lighthouse-bn /data/lighthouse/mainnet/beacon
-    sudo chgrp -R lighthouse-bn /data/lighthouse/mainnet/beacon
-    sudo chown -R lighthouse-vc /data/lighthouse/mainnet/validators
-    sudo chgrp -R lighthouse-vc /data/lighthouse/mainnet/validators
+    sudo mkdir -p /data/lighthouse
+    sudo mkdir -p /data/validator_keys
+    sudo chown -R lighthouse-bn /data/lighthouse
+    sudo chgrp -R lighthouse-bn /data/lighthouse
     sudo chown -R lighthouse-vc /data/validator_keys
     sudo chgrp -R lighthouse-vc /data/validator_keys
     ```
@@ -498,12 +528,13 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 1. Get yourself a new address to use as the fee recipient address. Should be on a hardware wallet, seed phrase secure etc. Don't worry about the withdrawal address at this point.
 1. On the staking machine:
     1. Download, extract and tidy up the staking deposit CLI.
+        1. Go to https://github.com/ethereum/staking-deposit-cli/releases/ and copy the URL of the latest version of the CLI.
         1. `cd /data`
-        1. `wget https://github.com/ethereum/staking-deposit-cli/releases/download/v2.3.0/staking_deposit-cli-76ed782-linux-amd64.tar.gz`
-        1. `tar -xvf staking_deposit-cli-76ed782-linux-amd64.tar.gz`
-        1. `rm staking_deposit-cli-76ed782-linux-amd64.tar.gz`
-        1. `mv staking_deposit-cli-76ed782-linux-amd64/deposit .`
-        1. `rmdir staking_deposit-cli-76ed782-linux-amd64`
+        1. `wget <paste URL here>`
+        1. `tar -xvf staking*`
+        1. `rm staking*.tar.gz`
+        1. `mv staking*/deposit .`
+        1. `rmdir staking*`
     1. Go offline before generating the mnemonic. In a perfect world you do this on an air-gapped machine with a fresh OS installation that's never been online. But having the validator keys on the staking machine itself at the end is convenient, so simply doing it on the staking machine while offline is acceptable, imo. Reboot before and after generating the mnemonic.
     1. Run it and record the mnemonic. We'll generate two keys but use only one for now.
         1. `./deposit new-mnemonic --num_validators 2 --chain mainnet`
@@ -604,7 +635,8 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. https://github.com/flashbots/mev-boost/releases
 1. If using a PPA, the update to the binary will happen automatically on new releases, but there's no automated restart of the process after that AFACT. It might also take some time to install. If you're in a rush to upgrade:
     1. `sudo apt update`
-    1. `apt list --upgradable` and expect to see `nerthermind` in there
+    1. `apt list --upgradable` and expect to see `nerthermind` in there.
+    1. If it's very soon after the release the binary may still be being built. Check https://launchpad.net/~nethermindeth/+archive/ubuntu/nethermind/+packages.
     1. `sudo apt upgrade`
 1. If you followed the above instructions, here's what you're using:
     1. `nethermind`: PPA
