@@ -538,7 +538,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. Go offline before generating the mnemonic. In a perfect world you do this on an air-gapped machine with a fresh OS installation that's never been online. But having the validator keys on the staking machine itself at the end is convenient, so simply doing it on the staking machine while offline is acceptable, imo. Reboot before and after generating the mnemonic.
     1. Run it and record the mnemonic. We'll generate two keys but use only one for now.
         1. `./deposit new-mnemonic --num_validators 2 --chain mainnet`
-        1. The _password that secures your validator keystore(s)_ doesn't need to be super secure. Someone with these keys can sabotage your validator performance but can't withdraw your stake.
+        1. The _password that secures your validator keystore(s)_ doesn't need to be super secure. Someone with these keys can sabotage your validator performance but can't withdraw your stake. It will be written in plain text to the filesystem when Lighthouse imports the keys anyway.
     1. This will generate:
         1. `./validator_keys/deposit_data-*.json`
         1. `./validator_keys/keystore-m_12381_3600_0_0_0-1663727039.json`
@@ -682,6 +682,56 @@ To stop staking, which is different to withdrawal:
     * If it never starts running again, it's low enough risk to build a new machine and start validating again with regenerated keys.
     * There's little point in the thief extracting the validator key from the machine, because it can't be used without the password anyway.
     * See also this [discussion](https://www.reddit.com/r/ethstaker/comments/p9ylco/what_to_do_if_your_staking_machine_is_physically/)
+
+### You need to migrate to a new machine
+
+* Follow everything above again on the new machine but only up to the point of creating the validator keys. The goal is to avoid slashing for double signing, so you only want one machine running at a time with the keys on it.
+* You can get the new machine sync'ed to the point of one of the earlier phases in snap sync and be ready for the validator to work. You don't need to wait for the later phases (old headers, old bodies, old receipts).
+* You'll sleep better at night knowing you've tested restoring from only the seed phrase so we'll use that approach here but other options are available:
+    * You can physically move the `validator_keys` directory to the new machine, assuming the old one is still around.
+    * Lighthouse has a `move` command.
+* Stop all the services on the new machine:
+```
+sudo systemctl stop lighthouse-vc
+sudo systemctl stop lighthouse-bn
+sudo systemctl stop mev-boost
+sudo systemctl stop nethermind
+```
+* Unplug the Ethernet cable. You'll need to be on the machine itself from here on, obvs, not SSH-ing in.
+* `curl google.com` to check you're really offline (maybe you have WiFi?). You probably don't have `ping` installed.
+* Recreate the validator keys from the mnemonic, making sure you can write to the `/data/validator_keys` directory first:
+```
+cd /data
+sudo chown [username]:[username] validator_keys
+deposit --language en existing-mnemonic
+```
+* At the `Create a password` step, you are NOT entering the old password from the old keystore. You're creating new keystores with the same keys in them, with a new password.
+* Compare the `keystore*` files contents to the ones on the old machine, if you still have access to it. Only the `pubkey` value needs to match though.
+* Compare the `deposit_data-*.json` files. At least the `pubkey`, `withdrawal_credentials` and `signature` values should match.
+* If everything looks good, decomission the old machine:
+    * Stop all services (see above)
+    * `cd /data/lighthouse/mainnet`
+    * `sudo mv validators validators.do_not_use`
+    * Start all services
+    * `tmux attach` and expect to see the validator NOT running. The VC process should be logging `No validators present`.
+    * Unplug the Ethernet cable on the old machine to be safe.
+    * Wait two epochs to be safe.
+* Recreate the validator on the new machine:
+```
+lighthouse --network mainnet account validator import --directory /data/validator_keys --datadir /data/lighthouse/mainnet
+sudo chown -R lighthouse-vc:lighthouse-vc /data/lighthouse/mainnet/validators
+```
+* If you're not running all of the validators you created keys for, edit `/data/lighthouse/mainnet/validators/validator_definitions.yml` and set `false` on the ones you don't want.
+* Start all the services and tail the logs
+```
+sudo systemctl stop nethermind
+sudo systemctl stop mev-boost
+sudo systemctl stop lighthouse-bn
+sudo systemctl stop lighthouse-vc
+tmux attach
+```
+* Once the only issue in the logs is that you're offline, plug in the Ethernet cable.
+* Check https://beaconcha.in/. In time, you should be so back.
 
 ### You move house
 
