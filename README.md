@@ -731,6 +731,8 @@ sudo systemctl stop lighthouse-vc
 tmux attach
 ```
 * Once the only issue in the logs is that you're offline, plug in the Ethernet cable.
+* Delete the NATs to the old machine and create new ones to the new machine. See above.
+* Lighthouse BN logs should start to say `INFO Syncing`.
 * Check https://beaconcha.in/. In time, you should be so back.
 
 ### You move house
