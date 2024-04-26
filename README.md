@@ -688,7 +688,7 @@ To stop staking, which is different to withdrawal:
 * Follow everything above again on the new machine but only up to the point of creating the validator keys. The goal is to avoid slashing for double signing, so you only want one machine running at a time with the keys on it.
 * You can get the new machine sync'ed to the point of one of the earlier phases in snap sync and be ready for the validator to work. You don't need to wait for the later phases (old headers, old bodies, old receipts).
 * You'll sleep better at night knowing you've tested restoring from only the seed phrase so we'll use that approach here but other options are available:
-    * You can physically move the `validator_keys` directory to the new machine, assuming the old one is still around.
+    * You can physically move the `/data/lighthouse/mainnet/validators` directory to the new machine, assuming the old one is still around.
     * Lighthouse has a `move` command.
 * Stop all the services on the new machine:
 ```
