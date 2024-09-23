@@ -783,8 +783,14 @@ Rough notes on setting up a separate machine for Juno.
     ./build/juno \
     --db-path /data/juno/mainnet \
     --http-port 6060
-    --eth-node ws://192.168.20.41:8545
+    --eth-node ws://192.168.20.51:8545
     --log-level DEBUG
+    ```
+1. To run with p2p sync (as of 2024-09), get a Sepolia snapshot and add:
+    ```
+    --network=sepolia \
+    --p2p \
+    --p2p-peers=/ip4/35.231.95.227/tcp/7777/p2p/12D3KooWNKz9BJmyWVFUnod6SQYLG4dYZNhs3GrMpiot63Y1DLYS
     ```
 1. If you can't build juno, you can fall back on running it as a container:
     ```
@@ -797,7 +803,7 @@ Rough notes on setting up a separate machine for Juno.
     --http-port 6060 \
     --http-host 0.0.0.0 \
     --db-path /var/lib/juno \
-    --eth-node ws://192.168.20.41:8545
+    --eth-node ws://192.168.20.51:8545
     ```
 1. Your RPC node is now available (even without waiting for sync to complete) on, eg. `http://192.168.20.53:6060`. You can test this with:
     ```
