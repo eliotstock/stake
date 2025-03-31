@@ -739,6 +739,11 @@ tmux attach
 
 * See "Unstaking" above.
 
+### You need the RPC endpoint on your local network
+
+* `sudo ufw allow 8545/tcp comment 'rpc'`
+* `sudo ufw reload`
+
 ### You need the Beacon Node API on your local network
 
 * `sudo ufw allow 5052/tcp comment 'beacon node api'`
