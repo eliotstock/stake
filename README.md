@@ -782,8 +782,8 @@ Rough notes on setting up a separate machine for Juno.
     ```
     ./build/juno \
     --db-path /data/juno/mainnet \
-    --http-port 6060
-    --eth-node ws://192.168.20.51:8545
+    --http-port 6060 \
+    --eth-node ws://192.168.20.51:8545 \
     --log-level DEBUG
     ```
 1. To run with p2p sync (as of 2024-09), get a Sepolia snapshot and add:
