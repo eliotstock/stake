@@ -416,8 +416,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     --http-address 192.168.20.51 \
     --http-allow-origin "*" \
     --builder http://localhost:18550 \
-    --graffiti eliotstock \
-    --suggested-fee-recipient <ADDRESS> \
+    --graffiti YOUR_GRAFFITI \
     --checkpoint-sync-url https://mainnet.checkpoint.sigp.io/
 
     [Install]
@@ -441,13 +440,14 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     --datadir /data/lighthouse/mainnet \
     --beacon-nodes http://192.168.20.51:5052 \
     --builder-proposals \
-    --graffiti eliotstock \
-    --suggested-fee-recipient <ADDRESS>
+    --graffiti YOUR_GRAFFITI
 
     [Install]
     WantedBy=multi-user.target
     ```
-1. Don't forget to replace `<ADDRESS>` with the Ethereum address to which you want rewards paid.
+1. Add the Ethereum address to which you want rewards paid to the validators definition file:
+    1. `sudo nano /data/lighthouse/mainnet/validators/validator_definitions.yml`
+    1. Add a `suggested_fee_recipient` value for each validator. The value has no quotes.
 1. To open up the Beacon Node API locally:
     1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.51:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
     1. You can now use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed.
