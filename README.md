@@ -2,9 +2,9 @@
 
 These instructions are up to date wrt the following releases.
 
-* `nethermind` 1.29.1
-* `lighthouse` 5.3.0
-* `mev-boost` 1.8.0
+* `nethermind` 1.31.1
+* `lighthouse` 7.0.1
+* `mev-boost` 1.9.0
 
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation stuff.
 
