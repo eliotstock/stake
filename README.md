@@ -296,6 +296,12 @@ Disk stats (read/write):
 
 ## Clients
 
+### JWT token
+
+1. Generate a JWT token to be used by the clients:
+    1. `openssl rand -hex 32 | tr -d "\n" > "/data/jwtsecret"`
+    1. This file needs to be readable by both the `nethermind` user and the `lighthouse-bn` user, so leave it as world readable.
+
 ### Nethermind (execution layer client)
 
 1. Add the PPA and install the package. See Nethermind's [docs](https://docs.nethermind.io/get-started/installing-nethermind#package-managers).
@@ -331,7 +337,7 @@ WorkingDirectory=/data/nethermind
 EnvironmentFile=/data/nethermind/.env
 ExecStart=/usr/share/nethermind/Nethermind.Runner \
     --datadir /data/nethermind \
-    --config /usr/share/nethermind/configs/mainnet.cfg
+    --config /usr/share/nethermind/configs/mainnet.json
 
 [Install]
 WantedBy=default.target
@@ -356,7 +362,7 @@ NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
 NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 ```
 1. Make `nethermind` own the file: `sudo chown nethermind /data/nethermind/.env`
-1. (Optional and only required if you already started running as root): Change ownership of all data and logs to the `nethermind` user:
+1. Change ownership of all data and logs to the `nethermind` user:
     1. `sudo chown -R nethermind /data/nethermind`
     1. `sudo chown -R nethermind /usr/share/nethermind`
 1. Start the service and enable it on boot:
@@ -503,9 +509,6 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 
 ### Initial sync
 
-1. Generate a JWT token to be used by the clients:
-    1. `openssl rand -hex 32 | tr -d "\n" > "/data/jwtsecret"`
-    1. This file needs to be readable by both the `nethermind` user and the `lighthouse-bn` user, so leave it as world readable.
 1. The first time you sync only, or if you've fallen far behind, use a checkpoint sync endpoint for the beacon node:
     1. `lighthouse --network mainnet --datadir /data/lighthouse/mainnet bn --execution-endpoint http://localhost:8551 --execution-jwt /data/jwtsecret --checkpoint-sync-url https://beaconstate.ethstaker.cc`
         1. Get the checkpoint sync URL from https://eth-clients.github.io/checkpoint-sync-endpoints/
