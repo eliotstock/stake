@@ -335,9 +335,9 @@ RestartSec=5
 TimeoutStopSec=180
 WorkingDirectory=/data/nethermind
 EnvironmentFile=/data/nethermind/.env
-ExecStart=/usr/share/nethermind/Nethermind.Runner \
+ExecStart=nethermind \
     --datadir /data/nethermind \
-    --config /usr/share/nethermind/configs/mainnet.json
+    --config mainnet
 
 [Install]
 WantedBy=default.target
@@ -370,7 +370,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. `sudo systemctl start nethermind.service`
     1. `sudo systemctl status nethermind.service`
     1. `sudo systemctl enable nethermind.service`
-1. Follow the logs for a bit to check it's working:
+1. Follow the logs for a bit to check it's working. At this stage you have no consensus layer client running so the logs should say something about waiting for that to appear.
     1. `journalctl -u nethermind -f`
 1. The (commented) config above will prune the database once the remaining space on the drive falls below 300 GB. Othwerwise pruning will be manual and you'll have to watch your disk space.
 1. Once up and running, check health with:
@@ -381,11 +381,6 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. `wscat -c ws://192.168.20.51:8545`
     1. `{"method":"eth_subscribe","params":["newHeads"],"id":1,"jsonrpc":"2.0"}`
     1. You should get some JSON back every block.
-1. Something to note on the executables.
-    1. `/usr/bin/nethermind` is just a shell script that runs either:
-        * `/usr/share/nethermind/Nethermind.Runner`, if there are command line args, or
-        * `/usr/share/nethermind/Nethermind.Launcher`, if there aren't
-    1. There seems to be no need for this. If you just run `/usr/share/nethermind/Nethermind.Runner`, it works. See this [bug](https://github.com/NethermindEth/nethermind/issues/4703).
 
 ### Lighthouse (consensus layer client)
 
