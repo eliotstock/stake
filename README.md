@@ -446,9 +446,6 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     [Install]
     WantedBy=multi-user.target
     ```
-1. Add the Ethereum address to which you want rewards paid to the validators definition file:
-    1. `sudo nano /data/lighthouse/mainnet/validators/validator_definitions.yml`
-    1. Add a `suggested_fee_recipient` value for each validator. The value has no quotes.
 1. To open up the Beacon Node API locally:
     1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.51:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
     1. You can now use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed.
@@ -565,6 +562,9 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
         1. Edit the `/data/lighthouse/mainnet/validators/validator_definitions.yml` file to disable the other validators.
     1. This transaction cost 50,634 gas, which was 0.00065 ETH at the time when I last did it. Having 0.001 ETH in your accouint to cover gas should be more than enough.
 1. Copy the public keys of the validator(s) you're funding from `/data/lighthouse/mainnet/validators/validator_definitions.yml` so you can paste them into beaconcha.in later (see Monitoring below)
+1. Add the Ethereum address to which you want rewards paid to the validators definition file:
+    1. `sudo nano /data/lighthouse/mainnet/validators/validator_definitions.yml`
+    1. Add a `suggested_fee_recipient` value for each validator. The value has no quotes.
 
 ## Monitoring
 
