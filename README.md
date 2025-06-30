@@ -394,6 +394,9 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 1. Create two users but do NOT create home directories for them and they should never log in, so they should not have a shell:
     1. `sudo useradd -M -s /bin/false lighthouse-bn`
     1. `sudo useradd -M -s /bin/false lighthouse-vc`
+1. Make space for the validator config:
+    1. `sudo mkdir /data/lighthouse/mainnet/validators`
+    1. `sudo chown -R lighthouse-vc:lighthouse-vc /data/lighthouse/mainnet/validators`
 1. Create two `systemd` unit files as follows:
     1. `sudo nano /etc/systemd/system/lighthouse-bn.service`:
     ```
