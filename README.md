@@ -446,9 +446,8 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     [Install]
     WantedBy=multi-user.target
     ```
-1. To open up the Beacon Node API locally:
+1. The config above assumes you want access to the Beacon Node API locally. You can use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed. If you don't need this, turn it off:
     1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.51:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
-    1. You can now use the Beacon Node API on  port `5052` but only on the local network. Do not NAT this through to the internet or you'll get DoS'ed.
 1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.51`.
 1. You may wish to add `--debug-level warn` to each file later on to reduce log noise. Start with the default of `info` though.
 1. Create data directories and change ownership of all data and logs to the `lighthouse` users:
