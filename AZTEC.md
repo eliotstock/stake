@@ -21,4 +21,10 @@ or:
 ```
 curl -X POST -H "Content-Type: application/json" -d '{"method":"eth_call","params":[{"data":"0x289b3c0d","to":"0x4d2cc1d5fb6be65240e0bfc8154243e69c0fb19e"},"latest"]}' http://localhost:8545
 ```
+or even just:
+```
+curl -X POST -H "Content-Type: application/json" \
+     --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+     http://localhost:8545
+```
 1. To be cont.
