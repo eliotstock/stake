@@ -46,7 +46,7 @@ curl -X POST -H "Content-Type: application/json" \
 1. My endpoints ended up at:
     1. Enter Execution RPC URL: http://192.168.20.52:8545
     1. Enter Beacon RPC URL: http://192.168.20.52:5052
-1. I could not get the process inside the docker container to see the network using the docs as provided. Instead I had to use "host networking". This mean not using the `aztec start` command and instead calling `docker run` directly. Here's my `run.sh`:
+1. I could not get the process inside the docker container to see the network using the docs as provided. Instead I had to use "host networking". This meant not using the `aztec start` command and instead calling `docker run` directly. Here's my `run.sh`:
 
 ```
 # Running this outside of the user's home dir fails with an error
