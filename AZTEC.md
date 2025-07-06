@@ -89,6 +89,6 @@ done
 1. Make yourself an `.env` file with all the env vars in it at `/data/aztec/.env`
 1. Create the `/data/aztec/logs` directory too.
 1. Finally, run all three processes inside `tmux` so it continues to run after you hang up your `ssh` session:
-  1. `/data/reth/sepolia/run.sh`
-  1. `sudo systemctl start lighthouse-bn.service && journalctl -u lighthouse-bn -f`
-  1. `/data/aztec/run.sh`
+    1. `/data/reth/sepolia/run.sh`
+    1. `sudo systemctl start lighthouse-bn.service && journalctl -u lighthouse-bn -f`
+    1. `/data/aztec/run.sh`
