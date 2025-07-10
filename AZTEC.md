@@ -1,4 +1,4 @@
-# Aztec (WiP)
+# Aztec
 
 Rough notes on setting up a separate machine as an Aztec sequencer node. These assume you've built a machine following the [README.md](README.md) for Ethereum nodes, but without any client software. They're additive to Aztec's own docs [here](https://docs.aztec.network/the_aztec_network/guides/run_nodes/how_to_run_sequencer).
 
@@ -92,3 +92,4 @@ done
     1. `/data/reth/sepolia/run.sh`
     1. `sudo systemctl start lighthouse-bn.service && journalctl -u lighthouse-bn -f`
     1. `/data/aztec/run.sh`
+1. Don't forget the NAT (port 40400 for both TCP and UDP).
