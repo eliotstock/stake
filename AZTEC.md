@@ -95,6 +95,7 @@ done
 1. Don't forget the NAT (port 40400 for both TCP and UDP).
     1. And to open that port on the firewall:
 ```
+sudo ufw allow 8080/tcp comment 'aztec'
 sudo ufw allow 40400 comment 'aztec p2p'
 sudo ufw enable
 ```
