@@ -92,8 +92,10 @@ done
     1. `/data/reth/sepolia/run.sh`
     1. `sudo systemctl start lighthouse-bn.service && journalctl -u lighthouse-bn -f`
     1. `/data/aztec/run.sh`
-1. Don't forget the NAT (port 40400 for both TCP and UDP).
-    1. And to open that port on the firewall:
+1. Don't forget the NATs:
+    1. Port 40400 for both TCP and UDP
+    1. Port 8080 for TCP only (the docs don't mention this one but there's a Discord bot that implies it's required)
+1. And to open those port on the firewall:
 ```
 sudo ufw allow 8080/tcp comment 'aztec'
 sudo ufw allow 40400 comment 'aztec p2p'
