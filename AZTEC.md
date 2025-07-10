@@ -93,3 +93,8 @@ done
     1. `sudo systemctl start lighthouse-bn.service && journalctl -u lighthouse-bn -f`
     1. `/data/aztec/run.sh`
 1. Don't forget the NAT (port 40400 for both TCP and UDP).
+    1. And to open that port on the firewall:
+```
+sudo ufw allow 40400 comment 'aztec p2p'
+sudo ufw enable
+```
