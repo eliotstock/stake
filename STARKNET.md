@@ -1,16 +1,54 @@
 # Starknet
 
-Rough notes on setting up a separate machine for Juno. These assume you've built a machine following the [README.md](README.md) for Ethereum nodes, but without any client software.
-
-Note: *out of date as of 2025-06*.
+Rough notes on setting up a separate machine as a Starknet validator. These assume you've built a machine following the [README.md](README.md) for Ethereum nodes, but without any client software.
 
 1. `sudo apt install git gcc make tmux lsof`
+1. You'll need a Rust toolchain. See https://www.rust-lang.org/tools/install.
+1. Follow the Pathfinder docs, using the [Building From Source](https://eqlabs.github.io/pathfinder/getting-started/running-pathfinder#building-from-source) approach.
+    1. Put the working directory in `/data/starknet/pathfinder/r/pathfinder`
+    1. `nano /data/starknet/pathfinder/r/pathfinder/.env`:
+```
+PATHFINDER_NETWORK=mainnet
+PATHFINDER_DATA_DIRECTORY=/data/starknet/pathfinder/data
+PATHFINDER_ETHEREUM_API_URL=ws://192.168.20.51:8545
+PATHFINDER_RPC_ROOT_VERSION=v08
+```
+    1. `nano /data/starknet/pathfinder/r/pathfinder/run.sh`:
+```
+export $(grep -v '^#' .env | xargs) && cargo run --release --bin pathfinder
+```
+1. Do the same for the validator attestation process, [here](https://github.com/eqlabs/starknet-validator-attestation).
+    1. Put the working directory in `/data/starknet/pathfinder/r/starknet-validator-attestation`
+    1. `nano /data/starknet/pathfinder/r/starknet-validator-attestation/.env`:
+```
+VALIDATOR_ATTESTATION_STARKNET_NODE_URL=http://127.0.0.1:9545/rpc/v0_8
+VALIDATOR_ATTESTATION_STAKER_OPERATIONAL_ADDRESS=[YOUR ADDR]
+VALIDATOR_ATTESTATION_OPERATIONAL_PRIVATE_KEY=[YOUR PRIVATE KEY]
+RUST_LOG=info
+```
+    1. `nano /data/starknet/pathfinder/r/starknet-validator-attestation/run.sh`:
+```
+export $(grep -v '^#' .env | xargs) && cargo run --release --bin starknet-validator-attestation -- --local-signer
+```
+
+## Upgrades
+
+1. Pathfinder
+    1. Go to the repo (https://github.com/eqlabs/pathfinder) and find the tag for the latest release.
+    1. cd `/data/starknet/pathfinder/r/pathfinder`
+    1. `git fetch origin`
+    1. `git checkout [tag]`
+    1. `ps -a` and spot the process for `pathfinder`, then `kill [PID]`
+    1. In a `tmux` session, run `/data/starknet/pathfinder/r/pathfinder/run.sh`
+1. Do the same for the validator attestation process repo (https://github.com/eqlabs/starknet-validator-attestation).
+
+# Obsolete notes for Juno
+
 1. Don't use the Ubuntu APK for `golang` - it's not recent enough.
     1. `sudo apt remove golang-1.18 golang-1.18-doc golang-1.18-go golang-1.18-src golang-doc golang-go golang-src`
     1. Grab the tarball URL from https://go.dev/dl/
     1. `wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz` (for example)
     1. Follow instructions at https://go.dev/doc/install
-1. You'll also need a Rust toolchain. See https://www.rust-lang.org/tools/install.
 1. `cd && git clone https://github.com/NethermindEth/juno.git && cd juno`
 1. `make juno`
 1. Grab the latest snapshot URL from https://github.com/NethermindEth/juno, `wget` it onto the node and extract it to `/data/juno/mainnet`.
@@ -69,6 +107,12 @@ Note: *out of date as of 2025-06*.
     1. Check which ports are accessible with `sudo ufw status`
     1. `sudo ufw reload`
 1. Upgrades
+    1. Pathfinder
+        1. Go to the repo (https://github.com/eqlabs/pathfinder) and find the tag for the latest release.
+        1. cd `/data/starknet/pathfinder/r/pathfinder`
+        1. `git fetch origin`
+        1. `git checkout [tag]`
+
     1. `cd ~/juno`
     1. `git pull origin main` (or a release tag)
     1. `rustup update`
