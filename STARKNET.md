@@ -7,26 +7,33 @@ Rough notes on setting up a separate machine as a Starknet validator. These assu
 1. Follow the Pathfinder docs, using the [Building From Source](https://eqlabs.github.io/pathfinder/getting-started/running-pathfinder#building-from-source) approach.
     1. Put the working directory in `/data/starknet/pathfinder/r/pathfinder`
     1. `nano /data/starknet/pathfinder/r/pathfinder/.env`:
+
     ```
     PATHFINDER_NETWORK=mainnet
     PATHFINDER_DATA_DIRECTORY=/data/starknet/pathfinder/data
     PATHFINDER_ETHEREUM_API_URL=ws://192.168.20.51:8545
     PATHFINDER_RPC_ROOT_VERSION=v08
     ```
+
     1. `nano /data/starknet/pathfinder/r/pathfinder/run.sh`:
+
     ```
     export $(grep -v '^#' .env | xargs) && cargo run --release --bin pathfinder
     ```
+
 1. Do the same for the validator attestation process, [here](https://github.com/eqlabs/starknet-validator-attestation).
     1. Put the working directory in `/data/starknet/pathfinder/r/starknet-validator-attestation`
     1. `nano /data/starknet/pathfinder/r/starknet-validator-attestation/.env`:
+
     ```
     VALIDATOR_ATTESTATION_STARKNET_NODE_URL=http://127.0.0.1:9545/rpc/v0_8
     VALIDATOR_ATTESTATION_STAKER_OPERATIONAL_ADDRESS=[YOUR ADDR]
     VALIDATOR_ATTESTATION_OPERATIONAL_PRIVATE_KEY=[YOUR PRIVATE KEY]
     RUST_LOG=info
     ```
+
     1. `nano /data/starknet/pathfinder/r/starknet-validator-attestation/run.sh`:
+    
     ```
     export $(grep -v '^#' .env | xargs) && cargo run --release --bin starknet-validator-attestation -- --local-signer
     ```
