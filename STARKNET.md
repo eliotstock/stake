@@ -39,7 +39,7 @@ Rough notes on setting up a separate machine as a Starknet validator. These assu
     ```
 
 1. Follow Pathfinder's [docs](https://eqlabs.github.io/pathfinder/database-snapshots) for grabbing a snapshot.
-1. Run both `run.sh` scripts in a tmux session.
+1. Run both `run.sh` scripts in a `tmux` session.
 
 ## Upgrades
 
