@@ -38,6 +38,7 @@ Rough notes on setting up a separate machine as a Starknet validator. These assu
     export $(grep -v '^#' .env | xargs) && cargo run --release --bin starknet-validator-attestation -- --local-signer
     ```
 
+1. Follow Pathfinder's [docs](https://eqlabs.github.io/pathfinder/database-snapshots) for grabbing a snapshot.
 1. Run both `run.sh` scripts in a tmux session.
 
 ## Upgrades
