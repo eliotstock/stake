@@ -35,17 +35,21 @@ bash <(curl -Ls https://raw.githubusercontent.com/DeepPatel2412/Aztec-Tools/main
 ```
 curl -X POST -H "Content-Type: application/json" \
   --data '{"jsonrpc":"2.0","method":"eth_call","params":[{"data":"0x289b3c0d","to":"0x4d2cc1d5fb6be65240e0bfc8154243e69c0fb19e"},"latest"],"id":1}' \
-  http://localhost:8545
+  http://192.168.20.53:8545
 ```
 or even just:
 ```
 curl -X POST -H "Content-Type: application/json" \
   --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-  http://localhost:8545
+  http://192.168.20.53:8545
+```
+and for the CL:
+```
+curl -s http://192.168.20.53:5052/eth/v1/node/syncing
 ```
 1. My endpoints ended up at:
-    1. Enter Execution RPC URL: http://192.168.20.52:8545
-    1. Enter Beacon RPC URL: http://192.168.20.52:5052
+    1. Enter Execution RPC URL: http://192.168.20.53:8545
+    1. Enter Beacon RPC URL: http://192.168.20.53:5052
 1. I could not get the process inside the docker container to see the network using the docs as provided. Instead I had to use "host networking". This meant not using the `aztec start` command and instead calling `docker run` directly. Here's my `run.sh`:
 
 ```
@@ -99,5 +103,11 @@ done
 ```
 sudo ufw allow 8080/tcp comment 'aztec'
 sudo ufw allow 40400 comment 'aztec p2p'
+sudo ufw enable
+```
+1. If you're running your L1 RPC stuff on another machine, on that machine:
+```
+sudo ufw allow 8545/tcp comment 'EL RPC'
+sudo ufw allow 5052/tcp comment 'CL RPC'
 sudo ufw enable
 ```

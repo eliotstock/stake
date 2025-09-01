@@ -18,7 +18,7 @@ Rough notes on setting up a separate machine as a Starknet validator. These assu
     * `nano /data/starknet/pathfinder/r/pathfinder/run.sh`:
 
     ```
-    export $(grep -v '^#' .env | xargs) && cargo run --release --bin pathfinder
+    export $(grep -v '^#' .env | xargs) && cargo run --release --bin pathfinder -- --rpc.websocket.enabled
     ```
 
 1. Do the same for the validator attestation process, [here](https://github.com/eqlabs/starknet-validator-attestation).
@@ -48,7 +48,7 @@ Rough notes on setting up a separate machine as a Starknet validator. These assu
     1. cd `/data/starknet/pathfinder/r/pathfinder`
     1. `git fetch origin`
     1. `git checkout [tag]`
-    1. `ps -a` and spot the process for `pathfinder`, then `kill [PID]`
+    1. `ps -a` and spot the process for `pathfinder`, then `kill [PID]` or `kill -9 [PID]` if that doesn't work.
     1. In a `tmux` session, run `/data/starknet/pathfinder/r/pathfinder/run.sh`
 1. Do the same for the validator attestation process repo (https://github.com/eqlabs/starknet-validator-attestation).
 
