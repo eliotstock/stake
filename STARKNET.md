@@ -47,6 +47,7 @@ Rough notes on setting up a separate machine as a Starknet validator. These assu
     1. Go to the repo (https://github.com/eqlabs/pathfinder) and find the tag for the latest release.
     1. cd `/data/starknet/pathfinder/r/pathfinder`
     1. `git fetch origin`
+    1. `git status` and compare the local version to the latest version.
     1. `git checkout [tag]`
     1. `ps -a` and spot the process for `pathfinder`, then `kill [PID]` or `kill -9 [PID]` if that doesn't work.
     1. In a `tmux` session, run `/data/starknet/pathfinder/r/pathfinder/run.sh`
