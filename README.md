@@ -2,9 +2,9 @@
 
 These instructions are up to date wrt the following releases.
 
-* `nethermind` 1.31.1
-* `lighthouse` 7.0.1
-* `mev-boost` 1.9.0
+* `nethermind` 1.37.1
+* `lighthouse` 8.1.3
+* `mev-boost` 1.12
 
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation stuff.
 
@@ -355,10 +355,7 @@ NETHERMIND_JSONRPCCONFIG_ENABLEDMODULES = [Eth, Subscribe, Trace, TxPool, Web3, 
 NETHERMIND_JSONRPCCONFIG_ENGINEENABLEDMODULES = [Net, Eth, Subscribe, Web3]
 NETHERMIND_HEALTHCHECKSCONFIG_ENABLED = true
 NETHERMIND_HEALTHCHECKSCONFIG_UIENABLED = true
-# Not working. See bug: https://github.com/NethermindEth/nethermind/issues/5738.
-# NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTRIGGER = VolumeFreeSpace
-# NETHERMIND_PRUNINGCONFIG_MODE = Full
-# NETHERMIND_PRUNINGCONFIG_FULLPRUNINGTHRESHOLDMB 307200
+NETHERMIND_PRUNINGCONFIG_CACHEMB=2048
 NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 ```
 1. Make `nethermind` own the file: `sudo chown nethermind /data/nethermind/.env`
