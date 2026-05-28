@@ -4,7 +4,7 @@ Rough notes on setting up a separate machine as a Starknet validator. These assu
 
 1. `sudo apt install git gcc make tmux lsof`
 1. You'll need a Rust toolchain. See https://www.rust-lang.org/tools/install.
-1. Follow the Pathfinder docs, using the [Building From Source](https://eqlabs.github.io/pathfinder/getting-started/running-pathfinder#building-from-source) approach.
+1. Follow the Pathfinder docs, using the [Building From Source](https://equilibriumco.github.io/pathfinder/getting-started/running-pathfinder#building-from-source) approach.
     * Put the working directory in `/data/starknet/pathfinder/r/pathfinder`
     * `nano /data/starknet/pathfinder/r/pathfinder/.env`:
 
