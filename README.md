@@ -28,8 +28,8 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
 1. Grab an Intel NUC. Specs for mine:
     1. i5-1135G7, 4 cores. Only two slots (one M.2, one 2.5" SATA)
     1. 32 GB RAM (but 16GB is fine)
-    1. Small drive (OS) is a Samsung SSD 980 250 GB M2
-    1. Big drive (data) is a Crucial BX500 2TB 2.5" SSD. "On the box" it says "SATA 6GB/s - Up to 540MB/s Read - Up to 500MB/s Write". The speed of this drive will affect your performance and re-sync time more than anything else. I don't recommend this drive, which takes about 30 hours to sync. Wish I'd got an NVMe.
+    1. One 4 TB NVMe M.2 drive holding both the OS and the chain data, as two LVM logical volumes (100 GB for `/`, the rest for `/data`). See "Set up the data volume" below.
+    1. Previously this machine had a Samsung 980 250 GB M.2 for the OS plus a Crucial BX500 2 TB 2.5" SATA SSD for data. The SATA drive took about 30 hours to sync and was the bottleneck for everything. Don't do that. The speed of the data drive affects performance and re-sync time more than anything else.
 1. Set the machine to restart after a power failure.
     1. `F2` during boot to get into BIOS settings
     1. Power > Secondary power settings
@@ -39,7 +39,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. F10 on boot to boot from USB for Intel NUC
     1. `Ubuntu Server (minimized)`
     1. Check ethernet interface(s) have a connection, use DHCP for now
-    1. Use an entire disk, 250GB SSD, LVM group, no need to encrypt
+    1. Use an entire disk, set it up as an LVM group, no need to encrypt. The installer creates a 100 GB root logical volume and leaves the rest of the volume group unallocated. We'll turn that into `/data` below. (If you have a separate data drive, pick the OS drive here.)
     1. Take photo of file system summary screen during installation
     1. Hostname: `node01`. Set a username.
     1. Install OpenSSH server.
@@ -216,38 +216,34 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo systemctl enable fail2ban.service`
     1. `sudo systemctl start fail2ban.service`
     1. Make a note to come back periodically and check for any banned IPs with `sudo fail2ban-client status sshd`
-1. Partition and mount the big drive
-    1. `lsblk` and confirm the big drive isn't mounted yet. It might be called `sda` or `nvme0n1`.
-    1. `sudo parted --list` and confirm it's not partitioned yet
-    1. `sudo fdisk /dev/nvme0n1`
-        1. `n` for new partition
-        1. `p` for primary
-        1. default partition number
-        1. default first sector
-        1. default last sector
-        1. `p` to print (check)
-        1. If your disk is larger than 2TB, don't worry about `fdisk` only supporting sizes up to 2TB. We'll deal with that next.
-        1. `w` to write.
-    1. (Optional) if your disk is biger than 2TB, give it a GPT label
-        1. `sudo parted /dev/nvme0n1`
-        1. `mklabel gpt`
-        1. `Yes`
-        1. `mkpart primary 0GB 4001GB` (for a 4TB drive)
-        1. `quit`.
-    1. Format the partition (note the `p1`: the partition, not the whole disk): `sudo mkfs -t ext4 /dev/nvme0n1p1` (or `/dev/sda1`)
-    1. Get the UUID for the drive from `sudo blkid`
-    1. Append to `/etc/fstab`:
-        1. `sudo nano /etc/fstab`
-        1. Add `/dev/disk/by-uuid/YOUR_DISK_UUID /data ext4 defaults    0   2`
-            1. The `0` here means the `dump` backup program should skip the disk and the `2` is the order in which `fsck` will check disks.
-    1. `sudo mkdir /data`, `sudo mount -a` and confirm the drive is mounted with `ls -lah /data`
-    1. Make the drive writable by your user with `sudo chown -R [username]:[username] /data`
-    1. `df -H` and confirm the drive is there and mostly free space
-    1. Reboot and make sure the drive mounts again
+1. Set up the data volume. Two options depending on your hardware.
+    1. **Option A: one big drive, OS and data on the same disk (what I run now).** The installer left most of the volume group free. Carve it into a logical volume for `/data`:
+        1. `sudo vgs` and confirm `ubuntu-vg` has most of the disk in `VFree`.
+        1. `sudo lvcreate -l 100%FREE -n data ubuntu-vg`
+        1. `sudo mkfs -t ext4 /dev/ubuntu-vg/data`
+        1. `sudo nano /etc/fstab` and add `/dev/mapper/ubuntu--vg-data /data ext4 defaults 0 2`
+            1. The `0` here means the `dump` backup program should skip the volume and the `2` is the order in which `fsck` will check it. Note the double dashes in the mapper name: LVM escapes the `-` in `ubuntu-vg` that way.
+        1. `lsblk` should now show `ubuntu--vg-data` under the NVMe partition alongside `ubuntu--vg-ubuntu--lv`.
+    1. **Option B: a separate data drive.**
+        1. `lsblk` and confirm the drive isn't mounted yet. It might be called `sda` or `nvme1n1`.
+        1. `sudo parted --list` and confirm it's not partitioned yet.
+        1. Give it a GPT label and one partition using the whole disk. GPT works for any size, so no need for `fdisk`:
+            1. `sudo parted /dev/sda`
+            1. `mklabel gpt`
+            1. `mkpart primary ext4 0% 100%`
+            1. `quit`
+        1. Format the partition (note the `1`: the partition, not the whole disk): `sudo mkfs -t ext4 /dev/sda1` (or `/dev/nvme1n1p1`)
+        1. Get the UUID for the partition from `sudo blkid`
+        1. `sudo nano /etc/fstab` and add `UUID=YOUR_PARTITION_UUID /data ext4 defaults 0 2`
+    1. Either way, then:
+        1. `sudo mkdir /data`, `sudo mount -a` and confirm it's mounted with `ls -lah /data`
+        1. Make it writable by your user with `sudo chown -R [username]:[username] /data`
+        1. `df -H` and confirm it's there and mostly free space
+        1. Reboot and make sure it mounts again
 1. Check for firmware updates for the drive
     1. `sudo smartctl -a /dev/nvme0n1` and get the current firmware version.
     1. Do some Googling and figure out if there's an update you need.
-1. Test the performance of the big drive
+1. Test the performance of the data drive
     1. `cd /data`
     1. `sudo fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=test --filename=test --bs=4k --iodepth=64 --size=150G --readwrite=randrw --rwmixread=75`
     1. Output is explained [here](https://tobert.github.io/post/2014-04-17-fio-output-explained.html)
@@ -505,13 +501,41 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. `lighthouse --network mainnet account wallet create --name stake --password-file stake.pass`
     1. Write down mnemonic -> sock drawer (not really obvs)
     1. `lighthouse --network mainnet account validator create --wallet-name stake --wallet-password stake.pass --count 1`
-1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk. As of NM v1.19, a re-sync takes two to three days for me with this drive.
-1. To dig deeper on I/O performance:
-    1. `sudo apt install sysstat`
-    1. `sudo nano /etc/default/sysstat` and change `false` to `true`
-    1. Reboot and restart all processes
-    1. `sar` and check the `%iowait` column
-    1. `iostat` (or `iostat -x 1` for repeated sampling) and check `%util` for the SSD.
+1. Take a note of how long the initial sync takes. The bottleneck for me is SSD speed. If you ever need to re-sync, you'll feel the pain of potentially missing a block proposal the longer this takes. I had to re-sync when I forgot to set any pruning command line args for NM and filled up my disk. As of NM v1.19, a re-sync took two to three days for me with the old SATA drive.
+1. To dig deeper on I/O performance. `sar` and `iostat` come from `sysstat`, which isn't installed by default.
+    1. `sudo apt install sysstat iotop`
+    1. Find the device names: `df /data` and `lsblk`. With the single-drive LVM layout the physical disk is `nvme0n1` and the `/data` volume is `dm-1` (check: `ls -l /dev/mapper/ubuntu--vg-data`).
+    1. Live view, during normal operation (not while running `fio`):
+        1. `iostat -x 1 nvme0n1 dm-1`. Watch `r_await`/`w_await` (ms per request, should be under 1 ms on NVMe) and `aqu-sz` (queue depth). `%util` is less meaningful on NVMe because the drive services many requests in parallel.
+        1. `vmstat 1`. The `wa` column is CPU time waiting on I/O. Sustained above ~10% is bad.
+        1. `cat /proc/pressure/io`. `some avg10` is the share of the last 10 s that some task was stalled on I/O. Above 10-20 in steady state points at the disk.
+    1. Who is doing the I/O. The OS shares the drive, so this matters:
+        1. `sudo iotop -o -d 2`. Expect Nethermind and Lighthouse. If journald, `unattended-upgrades` or anything else shows up regularly, it's competing.
+        1. `pidstat -d 2 -p $(pgrep -x nethermind)` for Nethermind alone.
+    1. Catch a block being processed: `iostat -x 1 nvme0n1 | grep --line-buffered -E '^nvme0n1'` in one `tmux` pane and `journalctl -u nethermind -f` in another, and line the spikes up with the `Processed` lines.
+    1. Historical data via `sar`:
+        1. `sudo nano /etc/default/sysstat` and change `ENABLED="false"` to `"true"`
+        1. `sudo systemctl enable --now sysstat`. It samples every 10 minutes.
+        1. `sar -u` and check the `%iowait` column. `sar -d -p` for per-disk util and await.
+        1. `sar -u -s 12:40:00 -e 13:00:00 -f /var/log/sysstat/sa24` for a window on a specific day of the month (here the 24th).
+    1. Drive health: `sudo smartctl -a /dev/nvme0n1` for model, firmware, percentage used and temperature. Sustained temperatures in the 70s mean the drive is throttling.
+1. Check swap before blaming the disk. On my machine the disk was fine and the real problem was 4.4 GB of Nethermind and Lighthouse memory sitting in swap, which makes block production page-fault its way through the tx pool and state.
+    1. `free -h`. If `Swap` used is non-zero while `available` is large, process memory got swapped out during some earlier pressure (startup, a full prune, a resync) and the kernel never pulls it back on its own.
+    1. See who owns it, in MB per process:
+    ```
+    for p in /proc/[0-9]*; do awk -v pid="${p#/proc/}" '/VmSwap/ && $2 > 0 {print $2, pid}' "$p/status"; done 2>/dev/null | sort -n | tail -5 | while read kb pid; do printf "%6d MB  %s\n" $((kb/1024)) "$(cat /proc/$pid/comm)"; done
+    ```
+    1. Pull it all back into RAM. Needs `available` to exceed swap used. Takes a minute or two and spikes reads, so do it in `tmux` and not near a proposal or sync committee duty:
+    ```
+    sudo swapoff -a && sudo swapon -a
+    free -h
+    ```
+    1. Stop it drifting back by telling the kernel to drop page cache before process memory:
+    ```
+    sudo sysctl vm.swappiness=10
+    echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swappiness.conf
+    ```
+    1. Expect it to recur after a full prune, which is the memory-hungriest thing Nethermind does. Same fix.
 
 ## Staking
 
