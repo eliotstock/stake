@@ -1,11 +1,5 @@
 # How to build an Ethereum staking machine
 
-These instructions are up to date wrt the following releases.
-
-* `nethermind` 1.37.1
-* `lighthouse` 8.1.3
-* `mev-boost` 1.12
-
 You'll need to be comfortable with Linux. The goal here is to gain an understanding of how each node process is configured directly so we're not using any higher level containerisation stuff.
 
 Before you start:
