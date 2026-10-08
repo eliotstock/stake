@@ -35,7 +35,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Power > Secondary power settings
     1. After power failure: Power on
     1. `F10` to save and exit
-1. Install Ubuntu Server 22.04 LTS
+1. Install Ubuntu Server 24.04 LTS
     1. F10 on boot to boot from USB for Intel NUC
     1. `Ubuntu Server (minimized)`
     1. Check ethernet interface(s) have a connection, use DHCP for now
@@ -147,13 +147,13 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo nano /etc/ssh/sshd_config`
     1. Change the ssh port from the default. Uncomment the `Port` line. Pick a memorable port number, eg. 60001, and make a note of it.
     1. Only allow ssh'ing in using a key from now on. Set `PasswordAuthentication no`.
-    1. Also change `systemd` which may be the one listening on port 22 because it's "socket activated".
+    1. On Ubuntu 22.10 and later (so 24.04 on the NUC, but not the 22.04-based Radxa image), `sshd_config`'s `Port` is ignored because `systemd` listens on port 22 itself via `ssh.socket` ("socket activation"). Change the socket too:
     1. `sudo mkdir /etc/systemd/system/ssh.socket.d`
     1. `sudo nano /etc/systemd/system/ssh.socket.d/port.conf` and put:
     ```
     [Socket]
     ListenStream=
-    ListenStream=[60001]
+    ListenStream=60001
     ```
     1. Reboot and reconnect, but this time use the `-p 60001` arg for `ssh`.
 1. Configure the firewall
@@ -188,7 +188,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. If re-installing, restore the `~/.ssh/authorized_keys` file you backed up earlier, using `scp`.
         1. Try connecting using `ssh` first
         1. You'll get an error about the host key changing, including a command to run to forget the old host key. Run it.
-        1. Now do the `scp` copy: `scp -P 1035 ./authorized_keys [username]@[ip]:/home/[username]/.ssh/authorized_keys`
+        1. Now do the `scp` copy: `scp -P 60001 ./authorized_keys [username]@[ip]:/home/[username]/.ssh/authorized_keys`
     1. Otherwise:
         1. You might like to set an alias in `~/.bashrc` such as `alias <random-name>="ssh -p 60001 [username]@[server IP]"`
         1. Similarly for scp: `alias <random-name>="scp -P 60001 $1 [username]@[server IP]:/home/[username]"`
@@ -202,20 +202,19 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. In order for `fail2ban` to work, the `sshd` service needs to be running, not just the "socket activated" version.
         1. `sudo systemctl enable ssh.service` (Note the `ssh` here, NOT `sshd`)
         1. `sudo systemctl start ssh.service`
-    1. `sudo cp /etc/fail2ban/fail2ban.conf /etc/fail2ban/fail2ban.local`
-    1. `sudo nano /etc/fail2ban/fail2ban.local` and add:
+    1. Jail settings go in `jail.local`, not `fail2ban.local` (that file configures the daemon itself and ignores jail sections). `sudo nano /etc/fail2ban/jail.local` and add:
     ```
     [sshd]
     enabled = true
     port = 60001
     filter = sshd
-    logpath = /var/log/auth.log
+    backend = systemd
     maxretry = 3
     bantime = -1
     ```
+    1. `backend = systemd` reads from the journal, so this works on the Radxa image too, which has no `/var/log/auth.log`.
     1. `sudo systemctl enable fail2ban.service`
     1. `sudo systemctl start fail2ban.service`
-    1. TODO: Fails on ARM because `/var/log/auth.log` doesn't exist.
     1. Make a note to come back periodically and check for any banned IPs with `sudo fail2ban-client status sshd`
 1. Partition and mount the big drive
     1. `lsblk` and confirm the big drive isn't mounted yet. It might be called `sda` or `nvme0n1`.
@@ -235,7 +234,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
         1. `Yes`
         1. `mkpart primary 0GB 4001GB` (for a 4TB drive)
         1. `quit`.
-    1. Format the partition: `sudo mkfs -t ext4 /dev/nvme0n1`
+    1. Format the partition (note the `p1`: the partition, not the whole disk): `sudo mkfs -t ext4 /dev/nvme0n1p1` (or `/dev/sda1`)
     1. Get the UUID for the drive from `sudo blkid`
     1. Append to `/etc/fstab`:
         1. `sudo nano /etc/fstab`
@@ -381,8 +380,8 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 
 ### Lighthouse (consensus layer client)
 
-1. Go to https://github.com/sigp/lighthouse/releases and find the latest (non-portable) release, with suffix `x86_64-unknown-linux-gnu`. Download, extract and delete it on the host.
-    1. `wget https://github.com/sigp/lighthouse/releases/download/v4.0.1/lighthouse-v4.0.1-x86_64-unknown-linux-gnu.tar.gz`
+1. Go to https://github.com/sigp/lighthouse/releases and find the latest release. Pick the tarball for your architecture: `x86_64-unknown-linux-gnu` for the Intel NUC, `aarch64-unknown-linux-gnu` for the Rock 5B. (There's no longer a portable/non-portable split.) Download, extract and delete it on the host.
+    1. `wget https://github.com/sigp/lighthouse/releases/download/v8.1.3/lighthouse-v8.1.3-x86_64-unknown-linux-gnu.tar.gz`
     1. `tar -xvf lighthouse-*.tar.gz`
     1. `rm lighthouse-*.tar.gz`
 1. Make sure it runs: `./lighthouse --version`
@@ -391,9 +390,15 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 1. Create two users but do NOT create home directories for them and they should never log in, so they should not have a shell:
     1. `sudo useradd -M -s /bin/false lighthouse-bn`
     1. `sudo useradd -M -s /bin/false lighthouse-vc`
-1. Make space for the validator config:
-    1. `sudo mkdir /data/lighthouse/mainnet/validators`
-    1. `sudo chown -R lighthouse-vc:lighthouse-vc /data/lighthouse/mainnet/validators`
+1. Create the data directories and set ownership. The beacon node owns everything under `/data/lighthouse` except the `validators` directory, which the validator client owns. Do the `bn` chown first so it doesn't clobber the `vc` one.
+    ```
+    sudo mkdir -p /data/lighthouse/mainnet/beacon
+    sudo mkdir -p /data/lighthouse/mainnet/validators
+    sudo mkdir -p /data/validator_keys
+    sudo chown -R lighthouse-bn:lighthouse-bn /data/lighthouse
+    sudo chown -R lighthouse-vc:lighthouse-vc /data/lighthouse/mainnet/validators
+    sudo chown -R lighthouse-vc:lighthouse-vc /data/validator_keys
+    ```
 1. Create two `systemd` unit files as follows:
     1. `sudo nano /etc/systemd/system/lighthouse-bn.service`:
     ```
@@ -450,15 +455,6 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. Omit `--http-address` and `--http-allow-origin` from the `bn` file and `--beacon-nodes http://192.168.20.51:5052` from the `vc` file if you don't need access to the Beacon Node API on your local network.
 1. Note that `localhost` is correct on the `bn` file, even though the EL client used `192.168.20.51`.
 1. You may wish to add `--debug-level warn` to each file later on to reduce log noise. Start with the default of `info` though.
-1. Create data directories and change ownership of all data and logs to the `lighthouse` users:
-    ```
-    sudo mkdir -p /data/lighthouse
-    sudo mkdir -p /data/validator_keys
-    sudo chown -R lighthouse-bn /data/lighthouse
-    sudo chgrp -R lighthouse-bn /data/lighthouse
-    sudo chown -R lighthouse-vc /data/validator_keys
-    sudo chgrp -R lighthouse-vc /data/validator_keys
-    ```
 1. Start the services and enable them on boot:
     ```
     sudo systemctl daemon-reload
@@ -519,24 +515,24 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 
 ## Staking
 
-1. Get yourself a new address to use as the fee recipient address. Should be on a hardware wallet, seed phrase secure etc. Don't worry about the withdrawal address at this point.
+1. Get yourself a new address to use as the fee recipient address and the withdrawal address. Should be on a hardware wallet, seed phrase secure etc. You set the withdrawal address at key generation time below, so have it ready. Decide too between a regular (type 1, 32 ETH max effective balance) and a compounding (type 2, up to 2048 ETH) validator.
 1. On the staking machine:
-    1. Download, extract and tidy up the staking deposit CLI.
-        1. Go to https://github.com/ethereum/staking-deposit-cli/releases/ and copy the URL of the latest version of the CLI.
+    1. Download, extract and tidy up the deposit CLI. The original `ethereum/staking-deposit-cli` is archived and deprecated; use the EthStaker one.
+        1. Go to https://github.com/eth-educators/ethstaker-deposit-cli/releases/ and copy the URL of the latest `linux-amd64` (Intel NUC) or `linux-arm64` (Rock 5B) tarball.
         1. `cd /data`
         1. `wget <paste URL here>`
-        1. `tar -xvf staking*`
-        1. `rm staking*.tar.gz`
-        1. `mv staking*/deposit .`
-        1. `rmdir staking*`
+        1. `tar -xvf ethstaker*`
+        1. `rm ethstaker*.tar.gz`
+        1. `mv ethstaker*/deposit .`
+        1. `rmdir ethstaker*`
     1. Go offline before generating the mnemonic. In a perfect world you do this on an air-gapped machine with a fresh OS installation that's never been online. But having the validator keys on the staking machine itself at the end is convenient, so simply doing it on the staking machine while offline is acceptable, imo. Reboot before and after generating the mnemonic.
     1. Run it and record the mnemonic. We'll generate two keys but use only one for now.
-        1. `./deposit new-mnemonic --num_validators 2 --chain mainnet`
+        1. `./deposit new-mnemonic --num_validators 2 --chain mainnet --withdrawal_address 0xYOUR_WITHDRAWAL_ADDRESS` and add `--compounding` or `--regular_withdrawal` to pick the validator type.
         1. The _password that secures your validator keystore(s)_ doesn't need to be super secure. Someone with these keys can sabotage your validator performance but can't withdraw your stake. It will be written in plain text to the filesystem when Lighthouse imports the keys anyway.
     1. This will generate:
         1. `./validator_keys/deposit_data-*.json`
         1. `./validator_keys/keystore-m_12381_3600_0_0_0-1663727039.json`
-    1. Remember this mnemonic can be used to regenerate both the signing key and the withdrawal key for later after Shanghai, although you'll get a slightly different keystore file if you do, even if you use the same password.
+    1. Remember this mnemonic can be used to regenerate the signing keys later, although you'll get a slightly different keystore file if you do, even if you use the same password. The withdrawal address is baked into the deposit's withdrawal credentials, so there's no separate withdrawal key to look after.
     1. Import only the first of the two keystores into the validator:
         1. `lighthouse --network mainnet --datadir /data/lighthouse/mainnet account validator import --keystore /data/validator_keys/keystore-m_12381_3600_0_0_0-*.json` and enter the password for the keystore.
     1. Back the keystore up onto a USB drive
@@ -548,7 +544,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
             1. Eject: `sudo eject /dev/sda`
             1. Reinsert the drive
             1. `sudo mkdir /media/usb`
-            1. `sudo mount -t vfat /dev/sdb1 /media/usb`
+            1. `sudo mount -t vfat /dev/sda1 /media/usb`
         1. `sudo cp -r /data/validator_keys /media/usb`
         1. `sudo eject /media/usb`
 1. On the machine where you have MetaMask and your hardware wallet connected:
@@ -578,12 +574,12 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 ### Tailing the logs
 
 1. Run `tmux` first, to get output from multiple services on the screen at once. `tmux` refresher:
-    1. Create four panes with `C-b "`
+    1. Create four panes by pressing `C-b "` three times (each press splits the current pane)
     1. Enter command prompt mode with `C-b :`, then:
         1. Make the panes evenly sized: `select-layout even-vertical`
         1. Give the panes titles of their index and the command running in them: `set -g pane-border-format "#{pane_index} #{pane_current_command}"`
     1. Move around the panes with `C-b [arrow keys]`
-    1. Kill a pane with `C-b C-d`
+    1. Kill a pane with `C-b x`
     1. Dettach from the session with `C-b d`
 1. Tail the logs for each running `systemd` service, one per pane (`ccze` is a logs colouriser):
     1. `journalctl -u nethermind -f | ccze`
@@ -593,7 +589,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 
 ## Troubleshooting issues
 
-1. Once you know your validator node index, you can get the current balance of your validator with `curl http://localhost:5052/eth/v1/beacon/states/head/validators/{index}`.
+1. Once you know your validator node index, you can get the current balance of your validator with `curl http://192.168.20.51:5052/eth/v1/beacon/states/head/validators/{index}` (the BN is bound to the LAN address, not `localhost`, in the unit file above).
 1. Check disks have space: `df -h`
     1. To prune Nethermind, call the `admin_prune` RPC endpoint, like [this](https://docs.nethermind.io/interacting/json-rpc-ns/admin#admin_prune).
     1. Expect this to take a day or two. Definitely don't do this if you're about to be in the sync committee.
@@ -606,7 +602,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. Minumum according to some Googling: 10 Mbit/s either way.
     1. If your router is a bit rubbish, like mine, you might want to preemptively reboot it once a month rather than have it go down in the middle of the night.
 1. Check logs:
-    1. Execution client: No log levels in logs. Just `grep rror /data/nethermind/logs/mainnet.logs.txt`
+    1. Execution client: `grep -e WARN -e ERROR /data/nethermind/logs/mainnet.logs.txt`, or `journalctl -u nethermind | grep -e WARN -e ERROR`
     1. Beacon Node: `grep -e WARN -e ERRO -e CRIT /data/lighthouse/mainnet/beacon/logs/beacon.log`
     1. Validator: `grep -e WARN -e ERRO -e CRIT /data/lighthouse/mainnet/validators/logs/validator.log`
     1. Google any errors.
@@ -618,9 +614,11 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 
 |Port   |Process                                   |
 |-------|------------------------------------------|
+|`30303`|EL client, p2p with other execution nodes|
 |`8545` |EL client, JSON RPC for general use|
-|`8551` |EL client, JSON RPC for the CL client only|
-|`9000` |CL client, for the EL client|
+|`8551` |EL client, Engine API for the CL client only|
+|`8555` |EL client, the extra `admin` RPC from the `.env` file|
+|`9000` |CL client, p2p with other beacon nodes|
 |`5052` |CL client, Beacon Node API for general use|
 |`18550`|MEV Boost|
 
@@ -700,7 +698,7 @@ sudo systemctl stop nethermind
 ```
 cd /data
 sudo chown [username]:[username] validator_keys
-deposit --language en existing-mnemonic
+/data/deposit --language en existing-mnemonic
 ```
 * At the `Create a password` step, you are NOT entering the old password from the old keystore. You're creating new keystores with the same keys in them, with a new password.
 * Compare the `keystore*` files contents to the ones on the old machine, if you still have access to it. Only the `pubkey` value needs to match though.
@@ -721,10 +719,10 @@ sudo chown -R lighthouse-vc:lighthouse-vc /data/lighthouse/mainnet/validators
 * If you're not running all of the validators you created keys for, edit `/data/lighthouse/mainnet/validators/validator_definitions.yml` and set `false` on the ones you don't want.
 * Start all the services and tail the logs
 ```
-sudo systemctl stop nethermind
-sudo systemctl stop mev-boost
-sudo systemctl stop lighthouse-bn
-sudo systemctl stop lighthouse-vc
+sudo systemctl start nethermind
+sudo systemctl start mev-boost
+sudo systemctl start lighthouse-bn
+sudo systemctl start lighthouse-vc
 tmux attach
 ```
 * Once the only issue in the logs is that you're offline, plug in the Ethernet cable.
