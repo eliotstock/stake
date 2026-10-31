@@ -13,11 +13,7 @@ Before you start:
 
 ## Hardware and OS install
 
-First decide between Intel and ARM for your hardware. If you want a quiet, fanless machine, choose ARM, but beware the issues I had below with the Radxa Rock 5B.
-
 Only buy the big drive after reading this awesome ["hall of blame"](https://gist.github.com/yorickdowne/f3a3e79a573bf35767cd002cc977b038) Gist.
-
-### Intel
 
 1. Grab an Intel NUC. Specs for mine:
     1. i5-1135G7, 4 cores. Only two slots (one M.2, one 2.5" SATA)
@@ -29,8 +25,8 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Power > Secondary power settings
     1. After power failure: Power on
     1. `F10` to save and exit
-1. Install Ubuntu Server 24.04 LTS
-    1. F10 on boot to boot from USB for Intel NUC
+1. Install Ubuntu Server 22.04 LTS
+    1. F10 on boot to boot from USB
     1. `Ubuntu Server (minimized)`
     1. Check ethernet interface(s) have a connection, use DHCP for now
     1. Use an entire disk, set it up as an LVM group, no need to encrypt. The installer creates a 100 GB root logical volume and leaves the rest of the volume group unallocated. We'll turn that into `/data` below. (If you have a separate data drive, pick the OS drive here.)
@@ -51,54 +47,6 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo reboot`
     1. Again, make sure you can still log in as your new user.
 
-### ARM
-
-1. Grab a Radxa Rock 5B board and parts. Specs for mine:
-    1. 16 GB RAM
-    1. Small drive (OS) is a 64 GB eMMC
-    1. Big drive (data) is a Crucial P3 Plus PCIe 4.0 NVMe M.2 2280. Do NOT get an NVMe drive with a massive heat sink on it, cause it won't fit. Clearance is limited between the bottom of the board and the case.
-        1. This drive claims "Up to 4,800MB/s Read - Up to 4,100MB/s Write" on the box.
-        1. But hewre's the `fio` output (see below for the command line used)
-        ```
-        READ: bw=316MiB/s (331MB/s), 316MiB/s-316MiB/s (331MB/s-331MB/s), io=3070MiB (3219MB), run=9722-9722msec
-        WRITE: bw=106MiB/s (111MB/s), 106MiB/s-106MiB/s (111MB/s-111MB/s), io=1026MiB (1076MB), run=9722-9722msec
-
-        ```
-    1. Get the Radxa case/heatsink. No need for a fan.
-    1. Get the eMMC to USB adapter for flashing the eMMC from the host machine.
-1. There is no BIOS!
-    1. ARM boards are not PCs and do not have a BIOS. Don't bother connecting a keyboard and monitor if you don't plan to use one long term.
-    1. The board powers on again if it ever loses power, so, nothing to set up there.
-    1. To shut it down and have it stay off, use `sudo poweroff`. If you use `sudo shutdown -r now` it will just reboot.
-    1. The RTC is managed from some binaries - see below.
-1. Flash the OS to the MMC.
-    1. Download the latest Ubuntu image from Radxa's [releases](https://github.com/radxa-build/rock-5b/releases) repo. It'll be something like `rock-5b_ubuntu_jammy_cli_b36.img.xz`.
-    1. Note that this is NOT an installer image, it's the actual OS that you're going to run.
-    1. Make sure you can uncompress `xz` files: `sudo apt install xz-utils`
-    1. `unxz rock-5b_ubuntu_jammy_cli_b36.img.xz`
-    1. Plug the USB adapter in and find out what `sd*` device it got with `sudo dmesg | tail -20`. Mine was `sda`.
-    1. Write the image with `sudo dd if=./rock-5b_ubuntu_jammy_cli_b36.img of=/dev/sda bs=1M`
-    1. `sudo umount /dev/sda`
-    1. Remove the USB adapter, take the little eMMC module off it and stick it on the underside of the board.
-    1. Connect the ethernet and USB cables and the board should power on. It seems OK to run it without the heatsink briefly. The LED should go green, then blue.
-    1. Watch the web interface of your router for the machine joining the LAN. Grab the IP address. Mine was `192.168.20.51`. You might instead be able to use `rock-5b.local` if your router creates it.
-    1. SSH in: `ssh rock@192.168.20.51`, password: `rock`
-    1. Check the OS version is what you expect: `lsb_release -a`
-    1. Create a new user: `sudo adduser [username]`. Set the password.
-    1. Add the user to the group that can be root: `sudo adduser [username] sudo`
-    1. Disconnect from SSH as `rock` and reconnect as your new user
-    1. Remove the existing `rock` user: `sudo deluser rock`
-    1. Change the hostname. Mine is `node01`.
-        1. `sudo nano /etc/hostname` and change
-        1. `sudo nano /etc/hosts` and change
-    1. Get network time working
-        1. `sudo nano /etc/systemd/timesyncd.conf`
-        1. Add `time.google.com`
-        1. `sudo timedatectl set-ntp true`
-        1. `systemctl restart systemd-timesyncd`
-        1. Check time with `timedatectl status` and check for `System clock synchronized: yes`
-        1. TODO: Not working. Fix.
-
 ## OS setup
 
 1. Switch to SSH-ing in from another machine now, for ease of copy/pasting stuff from this guide.
@@ -111,7 +59,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Agree to restarting all the suggested services.
     1. `sudo apt install nano unzip net-tools netplan.io ufw fail2ban parted fio ccze smartmontools speedtest-cli`
 1. Configure a static IP address.
-    1. Get the interface name for the Ethernet: `ip link`. Mine was `enP4p65s0` on the ARM board, `enp88s0` on the Intel NUC.
+    1. Get the interface name for the Ethernet: `ip link`. Mine was `enp88s0`.
     1. Figure out whether you're using `netplan` or `NetworkManager`. If both are installed you might have `/etc/netplan/something.yaml` simply delegating to `NetworkManager` with `renderer: NetworkManager`. The below assumes you want to use `netplan`.
     1. Paste the below block into a new `netplan` config file: `sudo nano /etc/netplan/01-config.yaml`.
     ```
@@ -141,7 +89,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo nano /etc/ssh/sshd_config`
     1. Change the ssh port from the default. Uncomment the `Port` line. Pick a memorable port number, eg. 60001, and make a note of it.
     1. Only allow ssh'ing in using a key from now on. Set `PasswordAuthentication no`.
-    1. On Ubuntu 22.10 and later (so 24.04 on the NUC, but not the 22.04-based Radxa image), `sshd_config`'s `Port` is ignored because `systemd` listens on port 22 itself via `ssh.socket` ("socket activation"). Change the socket too:
+    1. Only if you're on Ubuntu 22.10 or later (not 22.04): `sshd_config`'s `Port` is ignored because `systemd` listens on port 22 itself via `ssh.socket` ("socket activation"). Change the socket too:
     1. `sudo mkdir /etc/systemd/system/ssh.socket.d`
     1. `sudo nano /etc/systemd/system/ssh.socket.d/port.conf` and put:
     ```
@@ -169,7 +117,6 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. Also block pings: `sudo nano /etc/ufw/before.rules`, find the line reading `A ufw-before-input -p icmp --icmp-type echo-request -j ACCEPT` and change `ACCEPT` to `DROP`
     1. `sudo ufw reload`
 1. Make sure that `unattended-updates` works for more than just security updates and includes non-Ubuntu PPAs.
-    1. On ARM only, `sudo touch /etc/apt/apt.conf.d/50unattended-upgrades` first because this won't exist.
     1. `sudo nano /etc/apt/apt.conf.d/50unattended-upgrades`
     1. Add this anywhere:
     ```
@@ -206,7 +153,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     maxretry = 3
     bantime = -1
     ```
-    1. `backend = systemd` reads from the journal, so this works on the Radxa image too, which has no `/var/log/auth.log`.
+    1. `backend = systemd` reads from the journal rather than `/var/log/auth.log`.
     1. `sudo systemctl enable fail2ban.service`
     1. `sudo systemctl start fail2ban.service`
     1. Make a note to come back periodically and check for any banned IPs with `sudo fail2ban-client status sshd`
@@ -370,7 +317,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 
 ### Lighthouse (consensus layer client)
 
-1. Go to https://github.com/sigp/lighthouse/releases and find the latest release. Pick the tarball for your architecture: `x86_64-unknown-linux-gnu` for the Intel NUC, `aarch64-unknown-linux-gnu` for the Rock 5B. (There's no longer a portable/non-portable split.) Download, extract and delete it on the host.
+1. Go to https://github.com/sigp/lighthouse/releases and find the latest release. Pick the `x86_64-unknown-linux-gnu` tarball. (There's no longer a portable/non-portable split.) Download, extract and delete it on the host.
     1. `wget https://github.com/sigp/lighthouse/releases/download/v8.1.3/lighthouse-v8.1.3-x86_64-unknown-linux-gnu.tar.gz`
     1. `tar -xvf lighthouse-*.tar.gz`
     1. `rm lighthouse-*.tar.gz`
@@ -536,7 +483,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 1. Get yourself a new address to use as the fee recipient address and the withdrawal address. Should be on a hardware wallet, seed phrase secure etc. You set the withdrawal address at key generation time below, so have it ready. Decide too between a regular (type 1, 32 ETH max effective balance) and a compounding (type 2, up to 2048 ETH) validator.
 1. On the staking machine:
     1. Download, extract and tidy up the deposit CLI. The original `ethereum/staking-deposit-cli` is archived and deprecated; use the EthStaker one.
-        1. Go to https://github.com/eth-educators/ethstaker-deposit-cli/releases/ and copy the URL of the latest `linux-amd64` (Intel NUC) or `linux-arm64` (Rock 5B) tarball.
+        1. Go to https://github.com/eth-educators/ethstaker-deposit-cli/releases/ and copy the URL of the latest `linux-amd64` tarball.
         1. `cd /data`
         1. `wget <paste URL here>`
         1. `tar -xvf ethstaker*`
