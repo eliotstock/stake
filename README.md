@@ -125,6 +125,17 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
         "o=*";
     };
     ```
+1. Have the machine reboot itself after kernel (and other core library) upgrades. Without this, new kernels get installed but never booted into, and you keep running an old, unpatched one.
+    1. Reboots are triggered by `/var/run/reboot-required`, which is created by `update-notifier-common`. The minimized install may not have it: `dpkg -l update-notifier-common | grep ^ii || sudo apt install update-notifier-common`
+    1. `sudo nano /etc/apt/apt.conf.d/50unattended-upgrades` and add:
+    ```
+    Unattended-Upgrade::Automatic-Reboot "true";
+    Unattended-Upgrade::Automatic-Reboot-WithUsers "true";
+    Unattended-Upgrade::Automatic-Reboot-Time "04:00";
+    ```
+    1. The time is in the machine's timezone (UTC). Upgrades run around 06:00, so the reboot lands at 04:00 the next morning.
+    1. Each reboot costs one or two missed attestations.
+    1. Check it with `sudo unattended-upgrade --dry-run --debug 2>&1 | grep -i reboot`
 1. (Optional and only required if you didn't restore SSH keys from GitHub during installation) Set up ssh keys for all client machines from which you'll want to connect.
     1. If re-installing, restore the `~/.ssh/authorized_keys` file you backed up earlier, using `scp`.
         1. Try connecting using `ssh` first
