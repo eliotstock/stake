@@ -21,7 +21,7 @@ Commit and push to `main` directly without asking first, unless told otherwise.
 
 * Intel NUC, hostname `node01`, LAN IP `192.168.20.51`, Ubuntu 22.04 (jammy), not 24.04.
 * Nethermind (EL), Lighthouse beacon node and validator client (CL), mev-boost, each as its own `systemd` service and user: `nethermind`, `lighthouse-bn`, `lighthouse-vc`, `mev-boost`.
-* One validator, index 490968.
+* One validator, index 490968, with `0x02` (compounding) withdrawal credentials. The withdrawal address can never be changed.
 * Router is an EdgeRouter Pro (EdgeMAX web UI), forwarding 30303 and 9000 to the node.
 * `unattended-upgrades` installs from all origins and reboots automatically at 04:00 UTC when `/var/run/reboot-required` exists. Check `uname -r` against the latest installed kernel if in doubt.
 
