@@ -543,7 +543,7 @@ The short version: nothing on the staking machine can move your ETH. Everything 
 
 1. **Mnemonic.** On paper, offline. Never on the machine after key generation.
     1. Can: regenerate every signing key and do anything the keystores can (below).
-    1. Can't: withdraw or redirect your stake. The withdrawal credentials point at your withdrawal address (type 1 or type 2), are fixed at deposit time and can't be changed. The mnemonic also derives a BLS withdrawal key, but that only matters for type 0 credentials, which this setup never uses.
+    1. Can't: withdraw or redirect your stake. The withdrawal credentials point at your withdrawal address (type 1 or type 2), are fixed at deposit time and can't be changed. The mnemonic also derives a BLS withdrawal key, but that only matters while a validator still has type 0 credentials. Older validators (like mine, from 2022) started as type 0 and needed a one-time `bls_to_execution_change` signed with that key to set the withdrawal address. Once that's done it can't be repeated, and the BLS withdrawal key is useless.
 1. **Withdrawal address private key.** On your hardware wallet. Never on the machine.
     1. This is the one that matters. It receives all withdrawals and, as the fee recipient, all execution rewards. From the execution layer it can also trigger exits, partial withdrawals (compounding validators only) and consolidations. Lose control of this and you lose the stake.
 1. **Signing keystores** (`keystore-m_12381_3600_<n>_0_0-*.json`). One per validator, encrypted with the keystore password. Copies live in:
