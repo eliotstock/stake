@@ -27,7 +27,7 @@ Commit and push to `main` directly without asking first, unless told otherwise.
 
 ## Safety rules on the host
 
-* Never copy, export, move or print validator keystores, keystore passwords or the slashing protection DB. They live in `/data/lighthouse/mainnet/validators` and `/data/validator_keys`, owned by `lighthouse-vc`.
+* Never copy, export, move or print validator keystores, keystore passwords or the slashing protection DB. They live in `/data/lighthouse/mainnet/validators` and `/data/validator_keys` (the latter should be removed from the host or owned by root; see TODO.md).
 * Never start a second validator client or import the keys anywhere else. Running the same keys twice gets the validator slashed.
 * Restarting `lighthouse-vc` or rebooting costs attestations. Do it right after a `Successfully published attestations` log line, and only when needed.
 * Don't expose 5052 (beacon API), 8545 (JSON-RPC) or 8551 (engine API) to the internet.
