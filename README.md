@@ -537,6 +537,32 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     1. `sudo nano /data/lighthouse/mainnet/validators/validator_definitions.yml`
     1. Add a `suggested_fee_recipient` value for each validator. The value has no quotes.
 
+### Cryptographic material: what exists, where, and what it's good for
+
+The short version: nothing on the staking machine can move your ETH. Everything on it can, at worst, get your validator slashed or exited, and exited funds still go to your withdrawal address.
+
+1. **Mnemonic.** On paper, offline. Never on the machine after key generation.
+    1. Can: regenerate every signing key and do anything the keystores can (below).
+    1. Can't: withdraw or redirect your stake. The withdrawal credentials point at your withdrawal address (type 1 or type 2), are fixed at deposit time and can't be changed. The mnemonic also derives a BLS withdrawal key, but that only matters for type 0 credentials, which this setup never uses.
+1. **Withdrawal address private key.** On your hardware wallet. Never on the machine.
+    1. This is the one that matters. It receives all withdrawals and, as the fee recipient, all execution rewards. From the execution layer it can also trigger exits, partial withdrawals (compounding validators only) and consolidations. Lose control of this and you lose the stake.
+1. **Signing keystores** (`keystore-m_12381_3600_<n>_0_0-*.json`). One per validator, encrypted with the keystore password. Copies live in:
+    1. `/data/lighthouse/mainnet/validators/0x<pubkey>/`: the imported copies Lighthouse signs with.
+    1. `/data/validator_keys/`: the originals from the deposit CLI, including any keys you didn't fund. These are redundant once imported and backed up, so delete them from the machine, or at least `sudo chown -R root:root` them, `chmod 700` the dir and `chmod 400` the files.
+    1. The USB backup.
+    1. With the password, someone can: sign attestations and blocks, so running your key anywhere else at the same time gets you slashed. They can also sign a voluntary exit, which is irreversible.
+    1. They can't: withdraw your stake or change where it goes.
+1. **Keystore password.** Stored in plain text in `/data/lighthouse/mainnet/validators/validator_definitions.yml` once imported. So that file plus a keystore is a working signing key.
+1. **Slashing protection database** (`/data/lighthouse/mainnet/validators/slashing_protection.sqlite`). Not secret, and useless to a thief. But if it's deleted or replaced with an old copy, your own validator client can sign something conflicting and get you slashed. It must move with the keys when you migrate machines.
+1. **Deposit data** (`/data/validator_keys/deposit_data-*.json`, and on the USB drive). Public information, already on chain. Harmless.
+1. **Validator client API token** (`/data/lighthouse/mainnet/validators/api-token.txt`). Only matters if the VC's HTTP API is enabled, which it isn't in the unit file above. If it were, the token holder could list, import and delete keys over the network.
+1. **JWT secret** (`/data/jwtsecret`). World readable by design. Authenticates the beacon node to Nethermind's engine API on 8551. Someone with it and network access to 8551 could feed Nethermind a bogus view of the chain and make you miss duties. No keys, no funds. Never expose 8551 beyond the LAN.
+1. **Lighthouse wallet** (only if you used the `lighthouse account wallet create` steps under Initial sync rather than the deposit CLI). The wallet is an encrypted seed and `stake.pass` decrypts it, so together they're equivalent to the mnemonic. Don't leave `stake.pass` lying around in a home directory.
+
+Permissions: everything under `/data/lighthouse/mainnet/validators` should be owned by `lighthouse-vc:lighthouse-vc`, with directories `700` and files `600`. Your login user should not be able to read any of it without `sudo`, and should not have passwordless `sudo`, especially if you run AI agents on the host. Check with `sudo find /data/lighthouse/mainnet/validators /data/validator_keys -printf '%M %u:%g %p\n'`.
+
+See also [Your staking machine gets stolen](#your-staking-machine-gets-stolen).
+
 ## Monitoring
 
 ### Mobile push alerts
