@@ -272,6 +272,20 @@ Optional. Claude Code on the host is handy for reading logs and debugging in pla
     1. `ssh -T git@github.com` should say `Hi eliotstock/stake! You've successfully authenticated`.
     1. Switch the clone to SSH: `git -C ~/stake remote set-url origin git@github.com:eliotstock/stake.git`
     1. Set the commit identity: `git config --global user.name "Eliot Stock"` and `git config --global user.email "1144814+eliotstock@users.noreply.github.com"`.
+1. Install GitHub's CLI, `gh`, so Claude can read and comment on issues and PRs in this repo. Ubuntu 22.04's own `gh` package is 2.4.0 from 2022, so use GitHub's apt repo instead. `unattended-upgrades` then keeps it current along with everything else.
+    1. ```
+       sudo mkdir -p -m 755 /etc/apt/keyrings
+       wget -nv -O /tmp/githubcli-archive-keyring.gpg https://cli.github.com/packages/githubcli-archive-keyring.gpg
+       sudo install -m 644 /tmp/githubcli-archive-keyring.gpg /etc/apt/keyrings/githubcli-archive-keyring.gpg
+       echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+       sudo apt update && sudo apt install gh
+       ```
+    1. `gh --version`
+    1. Sign in with a token that only works for this repo, for the same reason as the deploy key above. `gh auth login` on its own would mint a token with the `repo` scope, which covers every repo on your account.
+        1. On GitHub: Settings > Developer settings > Personal access tokens > Fine-grained tokens > Generate new token. Repository access: **Only select repositories** > `eliotstock/stake`. Repository permissions: Issues **Read and write**, Pull requests **Read and write**. Metadata read is added automatically. Set an expiry; you'll repeat this step when it runs out.
+        1. Copy the token, then on the host: `read -rs t && echo "$t" | gh auth login --with-token --git-protocol ssh && unset t`. Paste the token and press Enter. `read -rs` keeps it off the screen and out of your shell history. `--git-protocol ssh` stops `gh` installing itself as a git credential helper, so `git push` keeps using the deploy key.
+        1. The token is stored in `~/.config/gh/hosts.yml`, mode `600`.
+        1. `gh auth status`, then `gh issue list` from inside `~/stake`.
 1. Add some guardrails in `~/.claude/settings.json`:
     ```
     {
