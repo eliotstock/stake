@@ -32,6 +32,7 @@ Commit and push to `main` directly without asking first, unless told otherwise.
 * Restarting `lighthouse-vc` or rebooting costs attestations. Do it right after a `Successfully published attestations` log line, and only when needed.
 * Don't expose 5052 (beacon API), 8545 (JSON-RPC) or 8551 (engine API) to the internet.
 * Don't run `apt upgrade`, change `ufw` or change `systemd` units without being asked.
+* You can't use `sudo` on the host: it always asks for a password and `Bash(sudo *)` is denied. When something needs root, give the user the exact command to run.
 
 ## Handy checks
 

@@ -14,5 +14,7 @@
     - [x] `e` is not in the `lighthouse-vc` group.
     - [x] `e` has no passwordless sudo (`sudo -k; sudo -n true` asks for a password).
     - [x] Removed `e` from the `lxd` group, which was root-equivalent without a password.
-- [ ] Get Claude Code installed.
+- [ ] Get Claude Code installed. Follow the "Claude" section of the README.
+    - [ ] Stop `sudo` caching the password (`timestamp_timeout=0`, see the end of OS setup in the README).
+    - [ ] Install, sign in, and add the deny rules to `~/.claude/settings.json`.
 - [ ] Review https://github.com/eliotstock/stake/issues/1 and see if there's anything left to do there.

@@ -240,6 +240,43 @@ Disk stats (read/write):
     1. Any execution client: 30303 (both TCP and UDP)
     1. Lighthouse (consensus client): 9000 (both TCP and UDP)
     1. Only while travelling, SSH: 60001 TCP
+1. Make sure your login user can't become root without your password. Anything running as you, including an AI agent (see Claude below), can then never touch the validator keys.
+    1. `sudo -k; sudo -n true && echo PASSWORDLESS` should print nothing. If it prints `PASSWORDLESS`, find the rule with `sudo grep -rn NOPASSWD /etc/sudoers /etc/sudoers.d` and remove it with `sudo visudo`.
+    1. Ubuntu adds the first user to the `lxd` group, which is root-equivalent: anyone in it can start a privileged container with the host's filesystem mounted. Unless you use LXD, `sudo gpasswd -d [username] lxd`, then log out and in again and check `id` no longer lists `lxd`.
+    1. Stop `sudo` caching your password, so nothing you run later can ride on a `sudo` you typed a few minutes ago. `sudo visudo -f /etc/sudoers.d/no-sudo-cache` and add `Defaults:[username] timestamp_timeout=0`. Use `visudo` rather than editing the file directly: it refuses to save a syntax error that would lock you out of `sudo`. Every `sudo` now asks for your password.
+
+## Claude
+
+Optional. Claude Code on the host is handy for reading logs and debugging in place. Do the last step of OS setup above (no passwordless root) first.
+
+1. Install it. The native installer puts it in `~/.local/bin/claude` and keeps it updated in the background.
+    1. `curl -fsSL https://claude.ai/install.sh | bash`
+    1. Open a new SSH session and check `claude --version`. If it's not found, add `export PATH="$HOME/.local/bin:$PATH"` to `~/.bashrc`.
+    1. Alternatively, install from Anthropic's signed apt repo (see the [setup docs](https://code.claude.com/docs/en/setup#install-with-linux-package-managers)), in which case `unattended-upgrades` keeps it updated along with everything else.
+1. Sign in. You need a Pro, Max, Team or Enterprise plan, or a Claude Console account. There's no browser on the host, so you do the browser part on your laptop.
+    1. Clone this repo and start Claude Code in it, so it picks up `AGENTS.md`: `git clone https://github.com/eliotstock/stake.git ~/stake`, `cd ~/stake`, `claude`.
+    1. Pick your account type. Claude Code can't open a browser, so it prints a login URL. Select it in your terminal and paste it into a browser on your laptop. If you're in `tmux`, zoom the pane first (`C-b z`) so the URL doesn't get chopped across lines.
+    1. Sign in in the browser. It shows a code. Paste that back into the terminal at `Paste code here if prompted`. You should see `Login successful`.
+    1. Credentials are stored in `~/.claude/.credentials.json`, mode `600`.
+    1. Alternative: on any machine with a browser, `claude setup-token` prints a one-year token. Set it as `CLAUDE_CODE_OAUTH_TOKEN` on the host. That puts a long-lived token in your shell config though, so the interactive login is better.
+1. Add some guardrails in `~/.claude/settings.json`:
+    ```
+    {
+      "permissions": {
+        "deny": [
+          "Bash(sudo *)",
+          "Read(//data/lighthouse/mainnet/validators/**)",
+          "Edit(//data/lighthouse/mainnet/validators/**)"
+        ],
+        "disableBypassPermissionsMode": "disable"
+      }
+    }
+    ```
+    1. The `//` prefix means an absolute path. A single `/` would be relative to `~/.claude`.
+    1. `disableBypassPermissionsMode` stops anyone starting a session with `--dangerously-skip-permissions`.
+    1. Run `/status` inside Claude Code and check `User settings` is listed under setting sources.
+    1. These rules are enforced by Claude Code and are best effort for shell commands. For example, `Bash(sudo *)` doesn't match `/usr/bin/sudo`. The real protection is the file permissions on the validator directory (see Staking below) and `sudo` always needing your password.
+1. When Claude needs something run as root, run it yourself rather than typing your password into one of its commands.
 
 ## Clients
 
@@ -521,8 +558,16 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
             1. Reinsert the drive
             1. `sudo mkdir /media/usb`
             1. `sudo mount -t vfat /dev/sda1 /media/usb`
-        1. `sudo cp -r /data/validator_keys /media/usb`
-        1. `sudo eject /media/usb`
+        1. Copy the keys into a dated folder, so keystores from different generations never get mixed up. Keystores regenerated from the same mnemonic hold the same keys but need a different password. `D=/media/usb/validator_keys-$(date +%Y-%m-%d)` then `sudo cp -r /data/validator_keys "$D"`
+        1. Verify the copy: `(cd /data/validator_keys && sha256sum *) > ~/keys.sha` then `(cd "$D" && sha256sum -c ~/keys.sha)`. Every file should say `OK`.
+        1. `sync`, then `sudo eject /media/usb`
+    1. Remove the keys from the machine. They're imported and backed up, and every extra copy is one more thing to protect. Only do this once the copy above verified: `sudo rm -r /data/validator_keys` and `rm ~/keys.sha`.
+    1. Lock down the validator directory so only the validator client can read it:
+    ```
+    sudo chown -R lighthouse-vc:lighthouse-vc /data/lighthouse/mainnet/validators
+    sudo find /data/lighthouse/mainnet/validators -type d -exec chmod 700 {} +
+    sudo find /data/lighthouse/mainnet/validators -type f -exec chmod 600 {} +
+    ```
 1. On the machine where you have MetaMask and your hardware wallet connected:
     1. Run through the checklist at https://launchpad.ethereum.org/en/checklist and make sure everything is tickety-boo.
     1. Get to https://launchpad.ethereum.org/en/upload-deposit-data where you upload your deposit data.
@@ -718,6 +763,7 @@ sudo chown [username]:[username] validator_keys
 lighthouse --network mainnet account validator import --directory /data/validator_keys --datadir /data/lighthouse/mainnet
 sudo chown -R lighthouse-vc:lighthouse-vc /data/lighthouse/mainnet/validators
 ```
+* Back up the new keystores to a dated folder on the USB drive, verify, delete `/data/validator_keys` and lock down the validator directory, all as in Staking above.
 * If you're not running all of the validators you created keys for, edit `/data/lighthouse/mainnet/validators/validator_definitions.yml` and set `false` on the ones you don't want.
 * Start all the services and tail the logs
 ```
