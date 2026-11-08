@@ -57,7 +57,7 @@ Only buy the big drive after reading this awesome ["hall of blame"](https://gist
     1. `sudo apt update`
     1. `sudo apt upgrade` (make coffee)
     1. Agree to restarting all the suggested services.
-    1. `sudo apt install nano unzip net-tools netplan.io ufw fail2ban parted fio ccze smartmontools speedtest-cli`
+    1. `sudo apt install nano unzip net-tools netplan.io ufw fail2ban parted fio ccze smartmontools speedtest-cli git`
 1. Configure a static IP address.
     1. Get the interface name for the Ethernet: `ip link`. Mine was `enp88s0`.
     1. Figure out whether you're using `netplan` or `NetworkManager`. If both are installed you might have `/etc/netplan/something.yaml` simply delegating to `NetworkManager` with `renderer: NetworkManager`. The below assumes you want to use `netplan`.
@@ -243,7 +243,6 @@ Disk stats (read/write):
 1. Make sure your login user can't become root without your password. Anything running as you, including an AI agent (see Claude below), can then never touch the validator keys.
     1. `sudo -k; sudo -n true && echo PASSWORDLESS` should print nothing. If it prints `PASSWORDLESS`, find the rule with `sudo grep -rn NOPASSWD /etc/sudoers /etc/sudoers.d` and remove it with `sudo visudo`.
     1. Ubuntu adds the first user to the `lxd` group, which is root-equivalent: anyone in it can start a privileged container with the host's filesystem mounted. Unless you use LXD, `sudo gpasswd -d [username] lxd`, then log out and in again and check `id` no longer lists `lxd`.
-    1. Stop `sudo` caching your password, so nothing you run later can ride on a `sudo` you typed a few minutes ago. `sudo visudo -f /etc/sudoers.d/no-sudo-cache` and add `Defaults:[username] timestamp_timeout=0`. Use `visudo` rather than editing the file directly: it refuses to save a syntax error that would lock you out of `sudo`. Every `sudo` now asks for your password.
 
 ## Claude
 
@@ -275,7 +274,8 @@ Optional. Claude Code on the host is handy for reading logs and debugging in pla
     1. The `//` prefix means an absolute path. A single `/` would be relative to `~/.claude`.
     1. `disableBypassPermissionsMode` stops anyone starting a session with `--dangerously-skip-permissions`.
     1. Run `/status` inside Claude Code and check `User settings` is listed under setting sources.
-    1. These rules are enforced by Claude Code and are best effort for shell commands. For example, `Bash(sudo *)` doesn't match `/usr/bin/sudo`. The real protection is the file permissions on the validator directory (see Staking below) and `sudo` always needing your password.
+    1. These rules are enforced by Claude Code and are best effort for shell commands. For example, `Bash(sudo *)` doesn't match `/usr/bin/sudo`. The real protection is the file permissions on the validator directory (see Staking below) and `sudo` needing your password.
+1. `sudo` remembers your password for 15 minutes per terminal. Run `sudo -k` before starting `claude` so it can't use a password you typed recently.
 1. When Claude needs something run as root, run it yourself rather than typing your password into one of its commands.
 
 ## Clients

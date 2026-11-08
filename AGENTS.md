@@ -27,12 +27,12 @@ Commit and push to `main` directly without asking first, unless told otherwise.
 
 ## Safety rules on the host
 
-* Never copy, export, move or print validator keystores, keystore passwords or the slashing protection DB. They live in `/data/lighthouse/mainnet/validators` and `/data/validator_keys` (the latter should be removed from the host or owned by root; see TODO.md).
+* Never copy, export, move or print validator keystores, keystore passwords or the slashing protection DB. They live in `/data/lighthouse/mainnet/validators`. The only other copies are on a USB drive, off the host.
 * Never start a second validator client or import the keys anywhere else. Running the same keys twice gets the validator slashed.
-* Restarting `lighthouse-vc` or rebooting costs attestations. Do it right after a `Successfully published attestations` log line, and only when needed.
+* Restarting `lighthouse-vc` or rebooting costs attestations. Do it right after a `Successfully published attestations` log line, and only when needed. To reboot, use `scripts/reboot-after-attestation.sh` (try `--dry-run` first).
 * Don't expose 5052 (beacon API), 8545 (JSON-RPC) or 8551 (engine API) to the internet.
 * Don't run `apt upgrade`, change `ufw` or change `systemd` units without being asked.
-* You can't use `sudo` on the host: it always asks for a password and `Bash(sudo *)` is denied. When something needs root, give the user the exact command to run.
+* You can't use `sudo` on the host: it needs the user's password and `Bash(sudo *)` is denied. When something needs root, give the user the exact command to run.
 
 ## Handy checks
 
