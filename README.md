@@ -258,6 +258,20 @@ Optional. Claude Code on the host is handy for reading logs and debugging in pla
     1. Sign in in the browser. It shows a code. Paste that back into the terminal at `Paste code here if prompted`. You should see `Login successful`.
     1. Credentials are stored in `~/.claude/.credentials.json`, mode `600`.
     1. Alternative: on any machine with a browser, `claude setup-token` prints a one-year token. Set it as `CLAUDE_CODE_OAUTH_TOKEN` on the host. That puts a long-lived token in your shell config though, so the interactive login is better.
+1. Let the host push to this repo, so Claude can commit its edits to `TODO.md` and this README. The clone above is over HTTPS, which can't push without a token, so switch it to SSH with a key that only works for this one repo.
+    1. Make a key. No passphrase, because nobody is at the keyboard to type one when Claude pushes: `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_github -N "" -C "node01 github"`
+    1. `cat ~/.ssh/id_ed25519_github.pub` and copy the line.
+    1. On GitHub, add it as a deploy key on the repo rather than to your account: https://github.com/eliotstock/stake/settings/keys > Add deploy key, paste it, tick **Allow write access**. A deploy key can only touch this one repo, so if the host is ever compromised the attacker can't push anywhere else.
+    1. Trust GitHub's host key. `ssh-keyscan -t ed25519 github.com | tee -a ~/.ssh/known_hosts | ssh-keygen -lf -` and check the fingerprint it prints against https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints.
+    1. Point `ssh` at the key for GitHub. In `~/.ssh/config` (create it, mode `600`):
+        ```
+        Host github.com
+            IdentityFile ~/.ssh/id_ed25519_github
+            IdentitiesOnly yes
+        ```
+    1. `ssh -T git@github.com` should say `Hi eliotstock/stake! You've successfully authenticated`.
+    1. Switch the clone to SSH: `git -C ~/stake remote set-url origin git@github.com:eliotstock/stake.git`
+    1. Set the commit identity: `git config --global user.name "Eliot Stock"` and `git config --global user.email "1144814+eliotstock@users.noreply.github.com"`.
 1. Add some guardrails in `~/.claude/settings.json`:
     ```
     {
