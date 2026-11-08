@@ -435,6 +435,7 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
     --http-address 192.168.20.51 \
     --http-allow-origin "*" \
     --builder http://localhost:18550 \
+    --builder-header-timeout 1500 \
     --graffiti YOUR_GRAFFITI \
     --checkpoint-sync-url https://mainnet.checkpoint.sigp.io/
 
@@ -487,15 +488,17 @@ NETHERMIND_JSONRPCCONFIG_ADDITIONALRPCURLS = [http://127.0.0.1:8555|http|admin]
 1. There are no Ubuntu packages for MEV-Boost. Download the latest binary from https://github.com/flashbots/mev-boost/releases.
 1. Extract and delete the tarball: `tar -xvf mev* && rm mev*.tar.gz`
 1. Move the binary: `mv mev-boost /data`
-1. Pick one or more relays to use.
-    1. If you have no strong opinions about this, just use Ultra Sound:
-    * `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
-    1. If you do, however, pick one or more from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md). You also might like to check https://www.relayscan.io/.
+1. Pick your relays. Use more than one: with a single relay, one slow answer means no bid at all and Lighthouse falls back to a locally built block, which is how this node once proposed an empty one ([issue #1](https://github.com/eliotstock/stake/issues/1)). These three are non-filtering and between them carry most of the market. Pubkeys are from the [eth-educators list](https://github.com/eth-educators/ethstaker-guides/blob/main/MEV-relay-list.md); market share is on https://www.relayscan.io/.
+    * Ultra Sound: `https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money`
+    * Titan, global endpoint. Geo-routed, and the only major relay with Asia-Pacific clusters: `https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@global.titanrelay.xyz`
+    * Aestus. It deliberately holds `getHeader` responses for several hundred ms to collect better bids, which from far away pushes it past the timeout, so turn the hold off with the URL parameter: `https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live?headerDelay=0`
+1. If you're a long way from the relays, raise the `getHeader` timeouts. The relays are all in the EU and US. From NZ a fresh TLS connection to any of them costs 0.5-0.75 s, and `mev-boost` doesn't keep connections warm between proposals, so most of the default 950 ms budget is gone before the relay does anything. Use `-request-timeout-getheader 1400` on `mev-boost` and `--builder-header-timeout 1500` on `lighthouse bn` (it must be larger than the `mev-boost` one). Worst case the block goes out about 1.9 s into the slot, well inside the 4 s attestation deadline.
+1. All of this relay tuning expires with Glamsterdam (ePBS, [EIP-7732](https://eips.ethereum.org/EIPS/eip-7732)): builder bids move in-protocol, there's no `getHeader` round trip and `mev-boost` becomes unnecessary. Live on Sepolia and Hoodi; no mainnet date as of November 2026.
 1. Create an `mev-boost` user but do NOT create a home directory and this user should never log in, so they should not have a shell: `sudo useradd -M -s /bin/false mev-boost`
 1. Create a `systemd` unit file. `sudo nano /etc/systemd/system/mev-boost.service`, then paste in the one from the repo [`README`](https://github.com/flashbots/mev-boost#systemd-configuration), except:
     1. Change the working directory to `WorkingDirectory=/data`
     1. Change the path to the binary to `ExecStart=/data/mev-boost \`
-    1. Put your relay in.
+    1. Put your relays and `-request-timeout-getheader` in.
 1. Change ownership of the binary. This isn't strictly necessary but keeps things tidy.
     1. `sudo chown mev-boost /data/mev-boost`
     1. `sudo chgrp mev-boost /data/mev-boost`
@@ -733,9 +736,9 @@ To stop staking, which is different to withdrawal:
 
 ### You travel
 
-* Open up your chosen SSH port (eg. 60001) on your NATs before you go.
-* Make sure the laptop you take has the SSH keys for the staking machine - test connecting from outside, using a mobile internet connection.
-* Disable the SSH port NAT when you get back.
+* The node runs [Tailscale](https://tailscale.com/kb/1031/install-linux), so SSH to its tailnet address (`tailscale status` on the node shows it) from any device logged in to the same tailnet. Nothing needs opening on the router.
+* Make sure the laptop you take is in the tailnet and has the SSH key for the staking machine. Test it from a mobile connection before you leave.
+* The old way was to forward the SSH port on the router before leaving and remove the forward when back. Tailscale replaces that and exposes nothing to the internet.
 
 ### Your staking machine gets stolen
 

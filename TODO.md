@@ -8,4 +8,4 @@
         - Confirm `uname -r` is `5.15.0-203-generic` or later.
         - Router (EdgeMAX > Port Forwarding): set 30303 and 9000 back to `Both`, Apply.
         - Host: `sudo ufw allow 30303/tcp` and `sudo ufw allow 9000/tcp`, then `sudo ufw status`.
-- [ ] Review https://github.com/eliotstock/stake/issues/1 and see if there's anything left to do there.
+- [ ] After the next block proposal, check https://beaconcha.in/validator/490968 for an MEV tag and a non-zero execution reward. If it fell back to a local block again, `journalctl -u mev-boost | grep -iE 'getHeader|bid'` shows which relays answered and how long they took. Background: https://github.com/eliotstock/stake/issues/1 (reviewed 2026-11-08; this is the only item left).
